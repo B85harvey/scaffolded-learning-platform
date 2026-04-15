@@ -122,3 +122,24 @@ Tracks all Phase 0 tasks. See `CLAUDE.md` for project context and conventions.
 - [x] Commit `feat(phase-2): route, data module, and lesson context` on phase-2 branch
 
 **122 tests passing (90 Phase 1 + 32 new). TypeScript clean. Build clean.**
+
+### Slice 2 — Lesson Shell, Slide Frame, Content Slides
+
+- [x] Phase 2 CSS custom properties added to `index.css` (--ga-color-_, --ga-radius-_, --ga-shadow-_, --ga-duration-_, --ga-ease-standard; slide-enter keyframe)
+- [x] `tailwind.config.js` extended with Phase 2 token names (ga-primary, ga-surface, ga-ink, ga-border-subtle, ga-border-strong, shadow-ga-md, rounded-ga-md, etc.)
+- [x] `src/hooks/useReducedMotion.ts` updated — sets data-reduced-motion on `<html>` as a side effect
+- [x] `src/hooks/useFocusOnMount.ts` new — focuses first tabbable element on mount
+- [x] `src/components/MarkdownBody.tsx` new — inline renderer for paragraphs, bold, italic, ordered and unordered lists
+- [x] `src/components/lesson/LessonShell.tsx` rebuilt — two column layout, sticky header with dots and save status, sticky footer with Back/counter/Next
+- [x] `src/components/lesson/SlideFrame.tsx` new — slide-enter animation, focus-on-mount, lock overlay with role="dialog"
+- [x] `src/components/lesson/ActionPlanPanel.tsx` new — scribe chip, six section blocks with "Not yet written" placeholders
+- [x] `src/components/lesson/slides/SlideContent.tsx` new — heading, image, MarkdownBody
+- [x] `src/components/lesson/slides/SlidePlaceholder.tsx` new — stub for mcq/scaffold/review
+- [x] `src/pages/lesson/LessonPage.tsx` updated — wraps LessonShell in LessonProvider
+- [x] Testing packages installed (jsdom, @testing-library/react, @testing-library/user-event, @testing-library/jest-dom)
+- [x] `src/hooks/useReducedMotion.test.ts` — 7 tests (matchMedia mock, data attribute, listener cleanup)
+- [x] `src/components/lesson/slides/SlideContent.test.tsx` — 12 tests (heading, image, markdown, 3 snapshots)
+- [x] `src/components/lesson/LessonShell.test.tsx` — 12 integration tests (render, navigation, Tab reachability)
+- [x] Commit `feat(phase-2): lesson shell, slide frame, content slides`
+
+**153 tests passing (122 Slice 1 + 31 new). TypeScript clean. Build clean.**
