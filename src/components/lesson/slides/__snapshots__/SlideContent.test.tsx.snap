@@ -1,0 +1,64 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SlideContent > snapshots > matches snapshot: no title, no image, body only 1`] = `
+<article
+  class="mx-auto w-full max-w-[820px]"
+>
+  <div
+    class="max-w-[64ch] font-sans text-base leading-relaxed text-ga-ink"
+  >
+    <p
+      class="mb-4 leading-relaxed last:mb-0"
+    >
+      Four rules apply to everything you write.
+    </p>
+  </div>
+</article>
+`;
+
+exports[`SlideContent > snapshots > matches snapshot: title + body, no image 1`] = `
+<article
+  class="mx-auto w-full max-w-[820px]"
+>
+  <h2
+    class="mb-6 font-sans text-2xl font-semibold leading-8 text-ga-ink"
+  >
+    Section 1: The Aim
+  </h2>
+  <div
+    class="max-w-[64ch] font-sans text-base leading-relaxed text-ga-ink"
+  >
+    <p
+      class="mb-4 leading-relaxed last:mb-0"
+    >
+      The Aim is one sharp sentence that states what the task requires.
+    </p>
+  </div>
+</article>
+`;
+
+exports[`SlideContent > snapshots > matches snapshot: title + image + body 1`] = `
+<article
+  class="mx-auto w-full max-w-[820px]"
+>
+  <img
+    alt="Hero image"
+    class="mb-6 w-full rounded-ga-md object-cover"
+    src="/hero.png"
+  />
+  <h2
+    class="mb-6 font-sans text-2xl font-semibold leading-8 text-ga-ink"
+  >
+    Slide with image
+  </h2>
+  <div
+    class="max-w-[64ch] font-sans text-base leading-relaxed text-ga-ink"
+  >
+    <p
+      class="mb-4 leading-relaxed last:mb-0"
+    >
+      Some body text.
+    </p>
+  </div>
+</article>
+`;

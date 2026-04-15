@@ -4,6 +4,7 @@ import { Callback } from '@/pages/auth/Callback'
 import { SignIn } from '@/pages/auth/SignIn'
 import { LessonPage } from '@/pages/lesson/LessonPage'
 import { ScaffoldPlayground } from '@/routes/_playground/scaffold'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 function Home() {
   return (
@@ -21,6 +22,10 @@ function Home() {
 }
 
 function App() {
+  // Sets data-reduced-motion on <html> so CSS variables and selectors can gate
+  // animation durations without per-component checks.
+  useReducedMotion()
+
   return (
     <BrowserRouter>
       <Routes>

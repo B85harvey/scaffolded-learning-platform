@@ -44,8 +44,7 @@ These rules are assessed under the Literacy and Terminology indicator of Investi
           id: 'a',
           text: 'We will use the Thermomix to make a delicious custard that we think everyone will love.',
           correct: false,
-          explanation:
-            'Uses "we" and is vague — no dish name, no video format.',
+          explanation: 'Uses "we" and is vague — no dish name, no video format.',
         },
         {
           id: 'b',
@@ -58,15 +57,13 @@ These rules are assessed under the Literacy and Terminology indicator of Investi
           id: 'c',
           text: "I am going to make French toast because it's easy.",
           correct: false,
-          explanation:
-            'Uses "I", is not specific about technology or video format.',
+          explanation: 'Uses "I", is not specific about technology or video format.',
         },
         {
           id: 'd',
           text: 'The Thermomix was amazing when we used it last time.',
           correct: false,
-          explanation:
-            'Past tense and not relevant to a future plan.',
+          explanation: 'Past tense and not relevant to a future plan.',
         },
       ],
     },
@@ -113,8 +110,7 @@ It also connects the task to the food and hospitality industry rather than just 
           {
             id: 'aim-benefit',
             text: 'What is the industry relevant benefit this technology provides? Choose one: efficiency, consistency, food safety, presentation quality, or time saving.',
-            frame:
-              'in order to demonstrate how commercial kitchen technology can improve {answer}',
+            frame: 'in order to demonstrate how commercial kitchen technology can improve {answer}',
             maxLen: 60,
           },
           {
@@ -154,22 +150,19 @@ Strong issues are industry specific. Weak issues sound generic, like "food is im
           id: 'a',
           text: 'Food safety is a significant consideration in commercial kitchens.',
           correct: false,
-          explanation:
-            'This is the Topic sentence — it names the issue but cites no source.',
+          explanation: 'This is the Topic sentence — it names the issue but cites no source.',
         },
         {
           id: 'b',
           text: 'According to Food Standards Australia (2024), 4.1 million Australians experience food poisoning each year.',
           correct: true,
-          explanation:
-            'Cited, specific, and data backed — that is the Evidence.',
+          explanation: 'Cited, specific, and data backed — that is the Evidence.',
         },
         {
           id: 'c',
           text: 'This matters for our dish because we are working with dairy and eggs.',
           correct: false,
-          explanation:
-            'This is the Explanation — it links the evidence back to the task.',
+          explanation: 'This is the Explanation — it links the evidence back to the task.',
         },
         {
           id: 'd',
@@ -195,8 +188,7 @@ Strong issues are industry specific. Weak issues sound generic, like "food is im
           {
             id: 'issue1-topic',
             text: 'Which issue is this paragraph about? Pick one: food trends, kitchen technology, food safety, nutrition, sustainability, or consumer behaviour.',
-            frame:
-              '{answer} is a significant consideration in the food and hospitality industry',
+            frame: '{answer} is a significant consideration in the food and hospitality industry',
             maxLen: 60,
           },
           {
@@ -243,8 +235,7 @@ Strong issues are industry specific. Weak issues sound generic, like "food is im
           {
             id: 'issue2-topic',
             text: 'Which issue is this paragraph about? Choose a different category to Issue 1.',
-            frame:
-              '{answer} is a significant consideration in the food and hospitality industry',
+            frame: '{answer} is a significant consideration in the food and hospitality industry',
             maxLen: 60,
           },
           {
@@ -291,8 +282,7 @@ Strong issues are industry specific. Weak issues sound generic, like "food is im
           {
             id: 'issue3-topic',
             text: 'Which issue is this paragraph about? Choose a different category again.',
-            frame:
-              '{answer} is a significant consideration in the food and hospitality industry',
+            frame: '{answer} is a significant consideration in the food and hospitality industry',
             maxLen: 60,
           },
           {

@@ -2,6 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Phase 2 design tokens ─────────────────────────────────────────────────── */
+/* These CSS custom properties are the source of truth for all Phase 2         */
+/* components. Tailwind config entries reference these values. Gate motion      */
+/* via [data-reduced-motion="true"] so a single JS toggle affects every         */
+/* animated element without per-component checks.                               */
+
+:root {
+  /* Colour */
+  --ga-color-primary: #4680ff;
+  --ga-color-primary-hover: #1f6fff;
+  --ga-color-surface: #ffffff;
+  --ga-color-surface-muted: #f5f7fa;
+  --ga-color-border: #e6e9ef;
+  --ga-color-border-strong: #c7ccd6;
+  --ga-color-text: #1c2434;
+  --ga-color-text-muted: #6b7280;
+  --ga-color-success: #21b87a;
+  --ga-color-warning: #f2b705;
+  --ga-color-danger: #e25c5c;
+  --ga-color-focus: rgba(70, 128, 255, 0.6);
+
+  /* Radius */
+  --ga-radius-sm: 6px;
+  --ga-radius-md: 12px;
+  --ga-radius-lg: 20px;
+
+  /* Elevation */
+  --ga-shadow-sm: 0 1px 2px rgba(28, 36, 52, 0.06);
+  --ga-shadow-md: 0 4px 12px rgba(28, 36, 52, 0.08);
+  --ga-shadow-lg: 0 12px 32px rgba(28, 36, 52, 0.12);
+
+  /* Motion */
+  --ga-duration-fast: 120ms;
+  --ga-duration-base: 180ms;
+  --ga-duration-slow: 240ms;
+  --ga-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Zero motion tokens when the data attribute is set (set by useReducedMotion). */
+/* The @media rule below handles CSS transitions; this handles CSS animations   */
+/* driven by custom properties.                                                 */
+[data-reduced-motion='true'] {
+  --ga-duration-fast: 0ms;
+  --ga-duration-base: 0ms;
+  --ga-duration-slow: 0ms;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -60,7 +107,7 @@
     -moz-osx-font-smoothing: grayscale;
   }
   :focus-visible {
-    outline: 2px solid theme('colors.ga.blue.DEFAULT');
+    outline: 3px solid var(--ga-color-focus);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -79,4 +126,23 @@
   .soft-gradient-bg {
     background-image: linear-gradient(135deg, #1de9b6 0%, #04a9f5 100%);
   }
+}
+
+/* ── Slide enter animation ─────────────────────────────────────────────────── */
+/* Applied to SlideFrame on mount. The @media rule above zeros the duration    */
+/* when prefers-reduced-motion is set; the custom property approach handles    */
+/* the data-reduced-motion data attribute path.                                 */
+@keyframes slide-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-enter {
+  animation: slide-enter var(--ga-duration-base) var(--ga-ease-standard) both;
 }
