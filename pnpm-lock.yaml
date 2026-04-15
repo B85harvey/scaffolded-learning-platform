@@ -41,6 +41,9 @@ importers:
         specifier: ^3.5.0
         version: 3.5.0
     devDependencies:
+      '@axe-core/react':
+        specifier: ^4.11.1
+        version: 4.11.1
       '@eslint/js':
         specifier: ^9.39.4
         version: 9.39.4
@@ -152,6 +155,12 @@ packages:
     resolution:
       {
         integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==,
+      }
+
+  '@axe-core/react@4.11.1':
+    resolution:
+      {
+        integrity: sha512-tjTsYVQw0YhmVDpayb/r55Xbda/Og3l6UCvBZ26C+MtmuSTyQ47PKzq8z3QMgKCJ0RB7lsdiDy4HwO2SKiNuHg==,
       }
 
   '@babel/code-frame@7.29.0':
@@ -1192,6 +1201,13 @@ packages:
     hasBin: true
     peerDependencies:
       postcss: ^8.1.0
+
+  axe-core@4.11.3:
+    resolution:
+      {
+        integrity: sha512-zBQouZixDTbo3jMGqHKyePxYxr1e5W8UdTmBQ7sNtaA9M2bE32daxxPLS/jojhKOHxQ7LWwPjfiwf/fhaJWzlg==,
+      }
+    engines: { node: '>=4' }
 
   balanced-match@1.0.2:
     resolution:
@@ -2767,6 +2783,12 @@ packages:
       }
     engines: { node: '>=8' }
 
+  requestidlecallback@0.3.0:
+    resolution:
+      {
+        integrity: sha512-TWHFkT7S9p7IxLC5A1hYmAYQx2Eb9w1skrXmQ+dS1URyvR8tenMLl4lHbqEOUnpEYxNKpkVMXUgknVpBZWXXfQ==,
+      }
+
   require-from-string@2.0.2:
     resolution:
       {
@@ -3424,6 +3446,11 @@ snapshots:
 
   '@asamuzakjp/nwsapi@2.3.9': {}
 
+  '@axe-core/react@4.11.1':
+    dependencies:
+      axe-core: 4.11.3
+      requestidlecallback: 0.3.0
+
   '@babel/code-frame@7.29.0':
     dependencies:
       '@babel/helper-validator-identifier': 7.28.5
@@ -4075,6 +4102,8 @@ snapshots:
       picocolors: 1.1.1
       postcss: 8.5.9
       postcss-value-parser: 4.2.0
+
+  axe-core@4.11.3: {}
 
   balanced-match@1.0.2: {}
 
@@ -4856,6 +4885,8 @@ snapshots:
     dependencies:
       indent-string: 4.0.0
       strip-indent: 3.0.0
+
+  requestidlecallback@0.3.0: {}
 
   require-from-string@2.0.2: {}
 

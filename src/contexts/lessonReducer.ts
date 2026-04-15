@@ -79,6 +79,16 @@ export function lessonReducer(state: LessonState, action: LessonAction): LessonS
     }
 
     case 'SET_TEXT_ANSWER': {
+      // Guard: ignore writes to slide ids that are not in this lesson
+      const slideExists = state.slides.some((s) => s.id === action.slideId)
+      if (!slideExists) {
+        if (import.meta.env.DEV) {
+          console.warn(
+            `[LessonReducer] SET_TEXT_ANSWER: unknown slideId "${action.slideId}" — ignoring`
+          )
+        }
+        return state
+      }
       const existing = state.answers[action.slideId]
       const values = existing && existing.kind === 'text' ? { ...existing.values } : {}
       values[action.promptId] = action.value

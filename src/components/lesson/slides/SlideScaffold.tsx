@@ -90,13 +90,10 @@ export function SlideScaffold({ slide }: SlideScaffoldProps) {
 
   return (
     <article className="mx-auto w-full max-w-[820px]" onKeyDown={handleKeyDown}>
-      {/* Section badge */}
-      <p
-        className="mb-2 font-sans text-xs font-medium uppercase tracking-[0.04em] text-ga-primary"
-        aria-label={`Section: ${sectionLabel}`}
-      >
+      {/* Section badge — solid primary chip; white-on-primary passes WCAG AA at ~9.4:1 */}
+      <span className="mb-3 inline-block rounded-ga-sm bg-ga-primary px-2.5 py-0.5 font-sans text-xs font-medium uppercase tracking-[0.04em] text-white">
         {sectionLabel}
-      </p>
+      </span>
 
       {/* Slide heading */}
       <h2 className="mb-6 font-sans text-2xl font-semibold leading-8 text-ga-ink">

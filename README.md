@@ -9,12 +9,14 @@ A classroom web platform for guiding Year 11 Food & Hospitality students through
 ```bash
 git clone https://github.com/B85harvey/scaffolded-learning-platform.git
 cd scaffolded-learning-platform
-npm install
+pnpm install
 cp .env.example .env   # then fill in your real values (see below)
-npm run dev
+pnpm dev
 ```
 
 The app runs at `http://localhost:5173`.
+
+The Kitchen Technologies lesson is available at `http://localhost:5173/lesson/kitchen-technologies` with no authentication required.
 
 ---
 
@@ -54,19 +56,30 @@ npx supabase gen types typescript --project-id rpkvvgzwjeyiumrduufv > src/types/
 
 ---
 
-## Scripts
+## Dev commands
 
-| Script                 | Description                                |
-| ---------------------- | ------------------------------------------ |
-| `npm run dev`          | Start local dev server                     |
-| `npm run build`        | Production build (TypeScript check + Vite) |
-| `npm run preview`      | Preview the production build locally       |
-| `npm run lint`         | ESLint                                     |
-| `npm run format`       | Prettier (write)                           |
-| `npm run format:check` | Prettier (check only, used in CI)          |
+| Command              | Description                                                |
+| -------------------- | ---------------------------------------------------------- |
+| `pnpm dev`           | Start local dev server at `localhost:5173`                 |
+| `pnpm build`         | Production build (TypeScript check + Vite bundle)          |
+| `pnpm preview`       | Preview the production build locally                       |
+| `pnpm test`          | Run Vitest test suite (non-interactive)                    |
+| `pnpm test:coverage` | Run tests with V8 coverage report                          |
+| `pnpm tsc --noEmit`  | TypeScript type-check without emitting files               |
+| `pnpm lint`          | ESLint across the whole project                            |
+| `pnpm format`        | Prettier (write — rewrites files in place)                 |
+| `pnpm format:check`  | Prettier (check only — used in CI and the pre-commit hook) |
+
+All five quality gates (`pnpm test`, `pnpm tsc --noEmit`, `pnpm lint`, `pnpm format:check`, `pnpm build`) must pass before merging to `main`.
+
+---
+
+## Accessibility
+
+`@axe-core/react` is wired in dev mode and reports violations to the browser console after each render. Threshold: zero critical or serious violations on any primary lesson state. See `PROGRESS.md` for the Sprint 1 axe log.
 
 ---
 
 ## Phase status
 
-See [PROGRESS.md](./PROGRESS.md) for the current Phase 0 task checklist.
+See [PROGRESS.md](./PROGRESS.md) for the current task checklist and sprint summaries.

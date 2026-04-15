@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LessonProvider } from '@/contexts/LessonContext'
 import { makeLessonState } from '@/contexts/lessonReducer'
+import type { LessonState } from '@/contexts/lessonReducer'
 import { LessonShell } from './LessonShell'
 import kitchenTechnologies from '@/lessons/kitchen-technologies'
 
@@ -22,6 +23,20 @@ function renderShell() {
   const lesson = kitchenTechnologies
   return render(
     <LessonProvider initialState={makeLessonState(lesson.id, lesson.slides)}>
+      <LessonShell lesson={lesson} />
+    </LessonProvider>
+  )
+}
+
+function renderShellAt(slideIndex: number, stateOverrides: Partial<LessonState> = {}) {
+  const lesson = kitchenTechnologies
+  const initialState: LessonState = {
+    ...makeLessonState(lesson.id, lesson.slides),
+    currentSlideIndex: slideIndex,
+    ...stateOverrides,
+  }
+  return render(
+    <LessonProvider initialState={initialState}>
       <LessonShell lesson={lesson} />
     </LessonProvider>
   )
@@ -108,6 +123,43 @@ describe('LessonShell — header layout', () => {
     // Slide 1 is in the orientation section
     const sectionName = screen.getByText('Orientation')
     expect(row2).toContainElement(sectionName)
+  })
+})
+
+// ── Next-button gating ────────────────────────────────────────────────────────
+
+describe('LessonShell — Next gating', () => {
+  it('Next is always enabled on a Content slide', () => {
+    renderShellAt(0) // slide 1, content
+    expect(screen.getByRole('button', { name: 'Next slide' })).not.toBeDisabled()
+  })
+
+  it('Next is disabled on an MCQ slide before any correct answer is stored', () => {
+    renderShellAt(2) // slide 3, MCQ (orientation rule-check)
+    expect(screen.getByRole('button', { name: 'Next slide' })).toBeDisabled()
+  })
+
+  it('Next is enabled on an MCQ slide after mcqResult is stored as correct', () => {
+    const mcqSlide = kitchenTechnologies.slides[2]
+    renderShellAt(2, {
+      answers: {
+        [mcqSlide.id]: { kind: 'text', values: { mcqResult: 'correct' } },
+      },
+    })
+    expect(screen.getByRole('button', { name: 'Next slide' })).not.toBeDisabled()
+  })
+
+  it('Next is disabled on a framed scaffold slide before commit', () => {
+    renderShellAt(4) // slide 5, aim scaffold
+    expect(screen.getByRole('button', { name: 'Next slide' })).toBeDisabled()
+  })
+
+  it('Next is enabled on a framed scaffold slide after commit', () => {
+    const scaffoldSlide = kitchenTechnologies.slides[4]
+    renderShellAt(4, {
+      committedSlideIds: [scaffoldSlide.id],
+    })
+    expect(screen.getByRole('button', { name: 'Next slide' })).not.toBeDisabled()
   })
 })
 

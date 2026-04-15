@@ -168,6 +168,34 @@ describe('GOTO', () => {
 // ── SET_TEXT_ANSWER ───────────────────────────────────────────────────────────
 
 describe('SET_TEXT_ANSWER', () => {
+  it('is a no-op for an unknown slide id', () => {
+    const state = makeState()
+    const next = lessonReducer(state, {
+      type: 'SET_TEXT_ANSWER',
+      slideId: 'does-not-exist',
+      promptId: 'any-prompt',
+      value: 'some value',
+    })
+    // Same object reference — state is unchanged
+    expect(next).toBe(state)
+    expect(next.answers['does-not-exist']).toBeUndefined()
+  })
+
+  it('stores mcqResult on an MCQ slide correctly', () => {
+    const state = makeState()
+    const next = lessonReducer(state, {
+      type: 'SET_TEXT_ANSWER',
+      slideId: 'slide-02',
+      promptId: 'mcqResult',
+      value: 'correct',
+    })
+    const answers = next.answers['slide-02']
+    expect(answers?.kind).toBe('text')
+    if (answers?.kind === 'text') {
+      expect(answers.values['mcqResult']).toBe('correct')
+    }
+  })
+
   it('stores a text answer keyed by promptId', () => {
     const state = makeState()
     const next = lessonReducer(state, {
@@ -431,6 +459,34 @@ describe('UNCOMMIT', () => {
     const next = lessonReducer(state, { type: 'UNCOMMIT', slideId: 'slide-03' })
     expect(next.committed['decision']).toBeDefined()
     expect(next.committed['aim']).toBeUndefined()
+  })
+
+  it('leaves slide answers intact after uncommit', () => {
+    const state = makeState({
+      answers: {
+        'slide-03': {
+          kind: 'text',
+          values: { 'aim-dish': 'French toast', 'aim-tech': 'Thermomix' },
+        },
+      },
+      committed: {
+        aim: { section: 'aim', text: 'some paragraph', warnings: [], committedAt: 1000 },
+      },
+      committedSlideIds: ['slide-03'],
+    })
+    const next = lessonReducer(state, { type: 'UNCOMMIT', slideId: 'slide-03' })
+
+    // Committed paragraph is gone, committedSlideIds is cleared
+    expect(next.committed['aim']).toBeUndefined()
+    expect(next.committedSlideIds).not.toContain('slide-03')
+
+    // But the student's typed answers are preserved
+    const answers = next.answers['slide-03']
+    expect(answers?.kind).toBe('text')
+    if (answers?.kind === 'text') {
+      expect(answers.values['aim-dish']).toBe('French toast')
+      expect(answers.values['aim-tech']).toBe('Thermomix')
+    }
   })
 
   it('is a no-op for a content slide', () => {
