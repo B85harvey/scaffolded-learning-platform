@@ -64,3 +64,18 @@ Tracks all Phase 0 tasks. See `CLAUDE.md` for project context and conventions.
 - [x] Wrap app in `QueryClientProvider` in `main.tsx`
 - [x] Configure default stale time (5 min) and retry (1)
 - [x] Tag `phase0-step6`
+
+### Step 7 — Deployment and First Smoke Test
+
+- [x] Create `vercel.json` with build config and SPA rewrite rule
+- [x] Write `README.md` with setup, env vars, and migration instructions
+- [x] Import repo to Vercel; configure environment variables
+- [x] Deploy to `scaffolded-learning-platform.vercel.app`
+- [x] Apply `00000000000000_init.sql` migration to live Supabase project
+- [x] Profile trigger verified live — new sign-up creates `profiles` row
+- [x] End-to-end smoke test passed: magic link delivered, session established, home page loads
+- [x] Tag `phase0-step7`
+
+---
+
+**Phase 0 closed 15 April 2026. Profile trigger verified live. Ready for Phase 1.**
