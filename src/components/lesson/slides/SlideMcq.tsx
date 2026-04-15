@@ -28,6 +28,10 @@ const OPTION_CLASSES: Record<OptionVisual, string> = {
 export function SlideMcq({ slide }: SlideMcqProps) {
   const { state, dispatch } = useLesson()
 
+  // For class-check slides, interaction is gated until the teacher reveals.
+  // self-check slides are always revealed.
+  const classRevealed = slide.variant === 'self' || Boolean(state.classReveal[slide.id])
+
   // Reducer holds only the resolved-correct result. Wrong submissions stay local.
   const rawAnswers = state.answers[slide.id]
   const answerValues = rawAnswers?.kind === 'text' ? rawAnswers.values : {}
@@ -94,7 +98,7 @@ export function SlideMcq({ slide }: SlideMcqProps) {
 
   const handleContainerKeyDown = (e: React.KeyboardEvent) => {
     // Digits 1–6: select and focus the corresponding option
-    if (e.key >= '1' && e.key <= '6' && !isResolved) {
+    if (e.key >= '1' && e.key <= '6' && !isResolved && classRevealed) {
       const idx = parseInt(e.key, 10) - 1
       const option = slide.options[idx]
       if (option) {
@@ -114,6 +118,7 @@ export function SlideMcq({ slide }: SlideMcqProps) {
   // ── Option visual state ─────────────────────────────────────────────────────
 
   const getOptionVisual = (option: McqOption): OptionVisual => {
+    if (!classRevealed) return 'default' // pre-reveal: options visible but inert
     if (isResolved) {
       return option.id === correctOption?.id ? 'correct' : 'default'
     }
@@ -131,9 +136,21 @@ export function SlideMcq({ slide }: SlideMcqProps) {
       aria-label="Multiple choice question"
     >
       {/* Question */}
-      <h2 className="mb-6 font-sans text-lg font-semibold leading-7 text-ga-ink">
+      <h2 className="mb-4 font-sans text-lg font-semibold leading-7 text-ga-ink">
         {slide.question}
       </h2>
+
+      {/* Class-check pre-reveal chip */}
+      {!classRevealed && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-4 inline-flex items-center gap-2 rounded-full bg-ga-surface-muted px-3 py-1.5"
+        >
+          <span className="h-2 w-2 rounded-full bg-ga-ink-muted" aria-hidden="true" />
+          <span className="font-sans text-sm text-ga-ink-muted">Waiting for class reveal</span>
+        </div>
+      )}
 
       {/* Options */}
       <div className="flex flex-col gap-3" role="list" aria-label="Answer options">
@@ -148,6 +165,7 @@ export function SlideMcq({ slide }: SlideMcqProps) {
               <button
                 id={`mcq-option-${slide.id}-${option.id}`}
                 type="button"
+                disabled={!classRevealed}
                 aria-pressed={visual === 'selected'}
                 aria-invalid={isWrong ? true : undefined}
                 aria-label={`Option ${idx + 1}: ${option.text}`}
@@ -159,7 +177,13 @@ export function SlideMcq({ slide }: SlideMcqProps) {
                 onClick={() => handleSelect(option.id)}
                 onKeyDown={(e) => {
                   // Enter on a focused option: select it then submit immediately
-                  if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !isResolved) {
+                  if (
+                    e.key === 'Enter' &&
+                    !e.metaKey &&
+                    !e.ctrlKey &&
+                    !isResolved &&
+                    classRevealed
+                  ) {
                     e.preventDefault()
                     submit(option.id)
                   }
@@ -210,7 +234,7 @@ export function SlideMcq({ slide }: SlideMcqProps) {
 
       {/* Submit / Try-again area — bottom right, same position as Commit on scaffold slides */}
       <div className="mt-8 flex items-center justify-end">
-        {isResolved ? null : showTryAgain ? (
+        {!classRevealed ? null : isResolved ? null : showTryAgain ? (
           <p className="font-sans text-sm text-ga-ink-muted">
             Select another option and try again.
           </p>

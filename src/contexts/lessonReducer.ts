@@ -13,6 +13,8 @@ export interface LessonState {
   /** Slide IDs that have been committed by the student (scaffold slides only). */
   committedSlideIds: string[]
   locks: Record<string, boolean>
+  /** class-check MCQ slides revealed by the teacher (dev toggle in Slice 6). */
+  classReveal: Record<string, boolean>
   ui: {
     shortcutsOpen: boolean
     reviewTab: 'raw' | 'polished'
@@ -30,6 +32,7 @@ export type LessonAction =
   | { type: 'COMMIT'; slideId: string }
   | { type: 'UNCOMMIT'; slideId: string }
   | { type: 'TOGGLE_LOCK'; slideId: string }
+  | { type: 'TOGGLE_CLASS_REVEAL'; slideId: string }
   | { type: 'OPEN_SHORTCUTS' }
   | { type: 'CLOSE_SHORTCUTS' }
   | { type: 'SET_REVIEW_TAB'; tab: 'raw' | 'polished' }
@@ -173,6 +176,16 @@ export function lessonReducer(state: LessonState, action: LessonAction): LessonS
       }
     }
 
+    case 'TOGGLE_CLASS_REVEAL': {
+      return {
+        ...state,
+        classReveal: {
+          ...state.classReveal,
+          [action.slideId]: !state.classReveal[action.slideId],
+        },
+      }
+    }
+
     case 'OPEN_SHORTCUTS': {
       return { ...state, ui: { ...state.ui, shortcutsOpen: true } }
     }
@@ -203,6 +216,7 @@ export function makeLessonState(lessonId: string, slides: SlideConfig[]): Lesson
     committed: {},
     committedSlideIds: [],
     locks: {},
+    classReveal: {},
     ui: { shortcutsOpen: false, reviewTab: 'raw' },
   }
 }

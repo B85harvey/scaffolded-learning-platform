@@ -516,6 +516,34 @@ describe('TOGGLE_LOCK', () => {
   })
 })
 
+// ── TOGGLE_CLASS_REVEAL ───────────────────────────────────────────────────────
+
+describe('TOGGLE_CLASS_REVEAL', () => {
+  it('reveals a slide that was not yet revealed', () => {
+    const state = makeState()
+    const next = lessonReducer(state, { type: 'TOGGLE_CLASS_REVEAL', slideId: 'slide-02' })
+    expect(next.classReveal['slide-02']).toBe(true)
+  })
+
+  it('hides a slide that was already revealed', () => {
+    const state = makeState({ classReveal: { 'slide-02': true } })
+    const next = lessonReducer(state, { type: 'TOGGLE_CLASS_REVEAL', slideId: 'slide-02' })
+    expect(next.classReveal['slide-02']).toBe(false)
+  })
+
+  it('does not affect other slides', () => {
+    const state = makeState({ classReveal: { 'slide-02': true } })
+    const next = lessonReducer(state, { type: 'TOGGLE_CLASS_REVEAL', slideId: 'slide-03' })
+    expect(next.classReveal['slide-02']).toBe(true)
+    expect(next.classReveal['slide-03']).toBe(true)
+  })
+
+  it('initialises classReveal as an empty object', () => {
+    const state = makeLessonState('test', allSlides)
+    expect(state.classReveal).toEqual({})
+  })
+})
+
 // ── OPEN_SHORTCUTS / CLOSE_SHORTCUTS ─────────────────────────────────────────
 
 describe('OPEN_SHORTCUTS', () => {

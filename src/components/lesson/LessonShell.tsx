@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLesson } from '@/contexts/LessonContext'
 import type { LessonState } from '@/contexts/lessonReducer'
 import { ActionPlanPanel } from './ActionPlanPanel'
+import { ShortcutHelpDialog } from './ShortcutHelpDialog'
 import { SlideFrame } from './SlideFrame'
 import { SlideContent } from './slides/SlideContent'
 import { SlideMcq } from './slides/SlideMcq'
@@ -123,6 +125,14 @@ function SaveStatus() {
 
 // ── LessonShellInner — uses context ───────────────────────────────────────────
 
+/** Returns true when the event target is a text-entry element. */
+function isTextInput(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  const tag = target.tagName.toLowerCase()
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return true
+  return target.isContentEditable
+}
+
 function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
   const { state, dispatch } = useLesson()
 
@@ -135,100 +145,125 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
   const canGoNext =
     state.currentSlideIndex < totalSlides - 1 && slideCanAdvance(currentSlide, state)
 
+  // ── Global "?" shortcut — opens ShortcutHelpDialog ───────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '?' && !isTextInput(e.target)) {
+        e.preventDefault()
+        dispatch({ type: state.ui.shortcutsOpen ? 'CLOSE_SHORTCUTS' : 'OPEN_SHORTCUTS' })
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [dispatch, state.ui.shortcutsOpen])
+
+  // ── Dev helper: window.__revealMcq(slideId) — toggles class reveal ───────
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    const w = window as Window & { __revealMcq?: (slideId: string) => void }
+    w.__revealMcq = (slideId: string) => dispatch({ type: 'TOGGLE_CLASS_REVEAL', slideId })
+    return () => {
+      delete w.__revealMcq
+    }
+  }, [dispatch])
+
   return (
-    <div className="flex min-h-screen flex-col bg-ga-surface-muted">
-      {/* ── Header ────────────────────────────────────────────────────────── */}
-      {/* Two-row header, total ~88 px. Horizontal padding matches the main slide area. */}
-      <header className="sticky top-0 z-10 border-b border-ga-border-subtle bg-ga-surface">
-        {/* Row 1: lesson title (left) + save status (right) */}
-        <div data-testid="header-row-1" className="flex h-11 items-center px-6 lg:px-8">
-          <p className="min-w-0 flex-1 truncate font-sans text-lg font-semibold leading-snug text-ga-ink">
-            {lesson.title}
-          </p>
-          <SaveStatus />
-        </div>
+    <>
+      {state.ui.shortcutsOpen && <ShortcutHelpDialog />}
+      <div className="flex min-h-screen flex-col bg-ga-surface-muted">
+        {/* ── Header ────────────────────────────────────────────────────────── */}
+        {/* Two-row header, total ~88 px. Horizontal padding matches the main slide area. */}
+        <header className="sticky top-0 z-10 border-b border-ga-border-subtle bg-ga-surface">
+          {/* Row 1: lesson title (left) + save status (right) */}
+          <div data-testid="header-row-1" className="flex h-11 items-center px-6 lg:px-8">
+            <p className="min-w-0 flex-1 truncate font-sans text-lg font-semibold leading-snug text-ga-ink">
+              {lesson.title}
+            </p>
+            <SaveStatus />
+          </div>
 
-        {/* Row 2: section name (left) + progress dots (right) */}
-        <div data-testid="header-row-2" className="flex h-11 items-center px-6 lg:px-8">
-          <p className="font-sans text-sm text-ga-ink-muted">
-            {SECTION_LABELS[currentSlide.section] ?? currentSlide.section}
-          </p>
-          <div className="ml-auto">
-            <ProgressDots
-              currentSection={currentSlide.section as Section}
-              committedSections={state.committed}
-            />
+          {/* Row 2: section name (left) + progress dots (right) */}
+          <div data-testid="header-row-2" className="flex h-11 items-center px-6 lg:px-8">
+            <p className="font-sans text-sm text-ga-ink-muted">
+              {SECTION_LABELS[currentSlide.section] ?? currentSlide.section}
+            </p>
+            <div className="ml-auto">
+              <ProgressDots
+                currentSection={currentSlide.section as Section}
+                committedSections={state.committed}
+              />
+            </div>
+          </div>
+        </header>
+
+        {/* ── Body ──────────────────────────────────────────────────────────── */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Main slide area */}
+          <main id="main" className="flex flex-1 flex-col overflow-y-auto p-8 md:p-6 lg:p-8">
+            <div className="mx-auto w-full max-w-[820px]">
+              <SlideFrame key={currentSlide.id} slide={currentSlide} isLocked={isLocked}>
+                {renderSlide(currentSlide)}
+              </SlideFrame>
+            </div>
+          </main>
+
+          {/* Action Plan Panel — 360 px at lg, 300 px at md, hidden below */}
+          <div className="hidden md:block md:w-[300px] lg:w-[360px]">
+            <div className="sticky top-[88px] h-[calc(100vh-88px-64px)] overflow-y-auto">
+              <ActionPlanPanel scribe={lesson.scribe} />
+            </div>
           </div>
         </div>
-      </header>
 
-      {/* ── Body ──────────────────────────────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Main slide area */}
-        <main id="main" className="flex flex-1 flex-col overflow-y-auto p-8 md:p-6 lg:p-8">
-          <div className="mx-auto w-full max-w-[820px]">
-            <SlideFrame key={currentSlide.id} slide={currentSlide} isLocked={isLocked}>
-              {renderSlide(currentSlide)}
-            </SlideFrame>
+        {/* ── Footer ────────────────────────────────────────────────────────── */}
+        <footer className="sticky bottom-0 z-10 flex h-16 items-center border-t border-ga-border-subtle bg-ga-surface px-6">
+          {/* Back */}
+          <div className="flex flex-1 items-center">
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'BACK' })}
+              disabled={!canGoBack}
+              aria-label="Previous slide"
+              className={[
+                'flex items-center gap-1.5 rounded-ga-sm px-4 py-2 font-sans text-sm font-medium transition-colors',
+                canGoBack
+                  ? 'border border-ga-border-strong text-ga-ink hover:border-ga-primary hover:text-ga-primary'
+                  : 'cursor-not-allowed border border-ga-border-subtle text-ga-ink-muted opacity-40',
+              ].join(' ')}
+            >
+              <ChevronLeft size={16} aria-hidden="true" />
+              Back
+            </button>
           </div>
-        </main>
 
-        {/* Action Plan Panel — 360 px at lg, 300 px at md, hidden below */}
-        <div className="hidden md:block md:w-[300px] lg:w-[360px]">
-          <div className="sticky top-[88px] h-[calc(100vh-88px-64px)] overflow-y-auto">
-            <ActionPlanPanel scribe={lesson.scribe} />
+          {/* Slide counter */}
+          <div className="flex items-center justify-center">
+            <span className="font-sans text-sm text-ga-ink-muted">
+              {slideNumber} of {totalSlides}
+            </span>
           </div>
-        </div>
+
+          {/* Next */}
+          <div className="flex flex-1 items-center justify-end">
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'NEXT' })}
+              disabled={!canGoNext}
+              aria-label="Next slide"
+              className={[
+                'flex items-center gap-1.5 rounded-ga-sm px-4 py-2 font-sans text-sm font-medium transition-colors',
+                canGoNext
+                  ? 'bg-ga-primary text-white hover:bg-ga-primary-dark'
+                  : 'cursor-not-allowed bg-ga-primary/40 text-white opacity-40',
+              ].join(' ')}
+            >
+              Next
+              <ChevronRight size={16} aria-hidden="true" />
+            </button>
+          </div>
+        </footer>
       </div>
-
-      {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <footer className="sticky bottom-0 z-10 flex h-16 items-center border-t border-ga-border-subtle bg-ga-surface px-6">
-        {/* Back */}
-        <div className="flex flex-1 items-center">
-          <button
-            type="button"
-            onClick={() => dispatch({ type: 'BACK' })}
-            disabled={!canGoBack}
-            aria-label="Previous slide"
-            className={[
-              'flex items-center gap-1.5 rounded-ga-sm px-4 py-2 font-sans text-sm font-medium transition-colors',
-              canGoBack
-                ? 'border border-ga-border-strong text-ga-ink hover:border-ga-primary hover:text-ga-primary'
-                : 'cursor-not-allowed border border-ga-border-subtle text-ga-ink-muted opacity-40',
-            ].join(' ')}
-          >
-            <ChevronLeft size={16} aria-hidden="true" />
-            Back
-          </button>
-        </div>
-
-        {/* Slide counter */}
-        <div className="flex items-center justify-center">
-          <span className="font-sans text-sm text-ga-ink-muted">
-            {slideNumber} of {totalSlides}
-          </span>
-        </div>
-
-        {/* Next */}
-        <div className="flex flex-1 items-center justify-end">
-          <button
-            type="button"
-            onClick={() => dispatch({ type: 'NEXT' })}
-            disabled={!canGoNext}
-            aria-label="Next slide"
-            className={[
-              'flex items-center gap-1.5 rounded-ga-sm px-4 py-2 font-sans text-sm font-medium transition-colors',
-              canGoNext
-                ? 'bg-ga-primary text-white hover:bg-ga-primary-dark'
-                : 'cursor-not-allowed bg-ga-primary/40 text-white opacity-40',
-            ].join(' ')}
-          >
-            Next
-            <ChevronRight size={16} aria-hidden="true" />
-          </button>
-        </div>
-      </footer>
-    </div>
+    </>
   )
 }
 

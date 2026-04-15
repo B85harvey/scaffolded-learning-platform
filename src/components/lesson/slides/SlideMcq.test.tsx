@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LessonProvider } from '@/contexts/LessonContext'
 import { makeLessonState } from '@/contexts/lessonReducer'
+import type { LessonState } from '@/contexts/lessonReducer'
 import { SlideMcq } from './SlideMcq'
 import type { SlideConfig } from '@/lessons/types'
 
@@ -53,12 +54,28 @@ const mcqSlide: Extract<SlideConfig, { type: 'mcq' }> = {
   ],
 }
 
-const allSlides = [mcqSlide] as SlideConfig[]
+const classCheckSlide: Extract<SlideConfig, { type: 'mcq' }> = {
+  ...mcqSlide,
+  id: 'test-mcq-class',
+  variant: 'class',
+}
 
-function renderMcq() {
+const allSlides = [mcqSlide, classCheckSlide] as SlideConfig[]
+
+function renderMcq(stateOverrides: Partial<LessonState> = {}) {
+  const base = makeLessonState('test-lesson', allSlides)
   return render(
-    <LessonProvider initialState={makeLessonState('test-lesson', allSlides)}>
+    <LessonProvider initialState={{ ...base, ...stateOverrides }}>
       <SlideMcq slide={mcqSlide} />
+    </LessonProvider>
+  )
+}
+
+function renderClassMcq(stateOverrides: Partial<LessonState> = {}) {
+  const base = makeLessonState('test-lesson', allSlides)
+  return render(
+    <LessonProvider initialState={{ ...base, ...stateOverrides }}>
+      <SlideMcq slide={classCheckSlide} />
     </LessonProvider>
   )
 }
@@ -329,5 +346,83 @@ describe('SlideMcq — incorrect answer', () => {
     await user.keyboard('{Enter}')
 
     expect(screen.getByRole('status')).toHaveTextContent('Not quite. Try again')
+  })
+})
+
+// ── Class-check MCQ — pre-reveal state ───────────────────────────────────────
+
+describe('SlideMcq — class-check pre-reveal', () => {
+  it('shows the "Waiting for class reveal" chip', () => {
+    renderClassMcq()
+    expect(screen.getByText('Waiting for class reveal')).toBeInTheDocument()
+  })
+
+  it('all options are disabled', () => {
+    renderClassMcq()
+    const buttons = screen.getAllByRole('button', { name: /Option/ })
+    buttons.forEach((btn) => expect(btn).toBeDisabled())
+  })
+
+  it('Submit button is absent', () => {
+    renderClassMcq()
+    expect(screen.queryByRole('button', { name: 'Submit answer' })).not.toBeInTheDocument()
+  })
+
+  it('digit keys do nothing when not revealed', async () => {
+    const user = userEvent.setup()
+    renderClassMcq()
+
+    // Focus inside the slide and press "2"
+    screen.getAllByRole('button', { name: /Option/ })[0].focus()
+    await user.keyboard('2')
+
+    // No option should have aria-pressed=true
+    const buttons = screen.getAllByRole('button', { name: /Option/ })
+    buttons.forEach((btn) => expect(btn).toHaveAttribute('aria-pressed', 'false'))
+  })
+})
+
+// ── Class-check MCQ — post-reveal state ──────────────────────────────────────
+
+describe('SlideMcq — class-check post-reveal', () => {
+  function renderRevealed() {
+    return renderClassMcq({ classReveal: { 'test-mcq-class': true } })
+  }
+
+  it('hides the "Waiting for class reveal" chip after reveal', () => {
+    renderRevealed()
+    expect(screen.queryByText('Waiting for class reveal')).not.toBeInTheDocument()
+  })
+
+  it('options become enabled after reveal', () => {
+    renderRevealed()
+    const buttons = screen.getAllByRole('button', { name: /Option/ })
+    buttons.forEach((btn) => expect(btn).not.toBeDisabled())
+  })
+
+  it('Submit button appears after reveal', () => {
+    renderRevealed()
+    expect(screen.getByRole('button', { name: 'Submit answer' })).toBeInTheDocument()
+  })
+
+  it('can select an option and submit correctly after reveal', async () => {
+    const user = userEvent.setup()
+    renderRevealed()
+
+    await user.click(screen.getByRole('button', { name: /Option 2: Option B/i }))
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+
+    expect(screen.getByRole('status')).toHaveTextContent('Correct')
+  })
+
+  it('wrong submission shows Try again message after reveal', async () => {
+    const user = userEvent.setup()
+    renderRevealed()
+
+    await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+
+    expect(screen.queryByRole('button', { name: 'Submit answer' })).not.toBeInTheDocument()
+    expect(screen.getByText(/Select another option and try again/)).toBeInTheDocument()
   })
 })
