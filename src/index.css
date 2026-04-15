@@ -55,8 +55,14 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-ga-bg text-ga-text;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .soft-gradient-bg {
+    background-image: linear-gradient(135deg, #1de9b6 0%, #04a9f5 100%);
   }
 }
