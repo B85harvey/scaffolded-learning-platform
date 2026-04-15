@@ -600,3 +600,79 @@ describe('makeLessonState', () => {
     expect(state.ui.reviewTab).toBe('raw')
   })
 })
+
+// ── RESET_ALL ─────────────────────────────────────────────────────────────────
+
+describe('lessonReducer — RESET_ALL', () => {
+  it('clears answers', () => {
+    let state = makeLessonState('test', [contentSlide])
+    state = lessonReducer(state, {
+      type: 'SET_TEXT_ANSWER',
+      slideId: contentSlide.id,
+      promptId: 'p',
+      value: 'hello',
+    })
+    state = lessonReducer(state, { type: 'RESET_ALL' })
+    expect(state.answers).toEqual({})
+  })
+
+  it('clears committed and committedSlideIds', () => {
+    const slides = [contentSlide, framedScaffoldSlide]
+    let state = makeLessonState('test', slides)
+    state = lessonReducer(state, {
+      type: 'SET_TEXT_ANSWER',
+      slideId: framedScaffoldSlide.id,
+      promptId: 'aim-dish',
+      value: 'pasta',
+    })
+    state = lessonReducer(state, {
+      type: 'SET_TEXT_ANSWER',
+      slideId: framedScaffoldSlide.id,
+      promptId: 'aim-tech',
+      value: 'oven',
+    })
+    state = lessonReducer(state, { type: 'COMMIT', slideId: framedScaffoldSlide.id })
+    expect(state.committedSlideIds).toContain(framedScaffoldSlide.id)
+
+    state = lessonReducer(state, { type: 'RESET_ALL' })
+    expect(state.committed).toEqual({})
+    expect(state.committedSlideIds).toEqual([])
+  })
+
+  it('clears locks', () => {
+    let state = makeLessonState('test', [contentSlide])
+    state = lessonReducer(state, { type: 'TOGGLE_LOCK', slideId: contentSlide.id })
+    expect(state.locks[contentSlide.id]).toBe(true)
+
+    state = lessonReducer(state, { type: 'RESET_ALL' })
+    expect(state.locks).toEqual({})
+  })
+
+  it('clears classReveal', () => {
+    const mcq = mcqSlide
+    let state = makeLessonState('test', [mcq])
+    state = lessonReducer(state, { type: 'TOGGLE_CLASS_REVEAL', slideId: mcq.id })
+    expect(state.classReveal[mcq.id]).toBe(true)
+
+    state = lessonReducer(state, { type: 'RESET_ALL' })
+    expect(state.classReveal).toEqual({})
+  })
+
+  it('resets currentSlideIndex to 0', () => {
+    const slides = [contentSlide, framedScaffoldSlide]
+    let state = makeLessonState('test', slides)
+    state = lessonReducer(state, { type: 'NEXT' })
+    expect(state.currentSlideIndex).toBe(1)
+
+    state = lessonReducer(state, { type: 'RESET_ALL' })
+    expect(state.currentSlideIndex).toBe(0)
+  })
+
+  it('preserves slides and lessonId', () => {
+    const slides = [contentSlide, framedScaffoldSlide]
+    let state = makeLessonState('my-lesson', slides)
+    state = lessonReducer(state, { type: 'RESET_ALL' })
+    expect(state.lessonId).toBe('my-lesson')
+    expect(state.slides).toEqual(slides)
+  })
+})

@@ -8,6 +8,8 @@ export interface Shortcut {
  * Rendered in ShortcutHelpDialog and used to verify test coverage.
  */
 export const SHORTCUTS: Shortcut[] = [
+  { key: '→', description: 'Next slide (when unlocked)' },
+  { key: '←', description: 'Previous slide' },
   { key: '?', description: 'Open this help dialog' },
   { key: 'Escape', description: 'Close this dialog' },
   { key: '1 – 6', description: 'Select an MCQ option' },

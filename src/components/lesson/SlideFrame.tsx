@@ -23,7 +23,9 @@ export function SlideFrame({ slide, isLocked, children }: SlideFrameProps) {
 
   return (
     <div className="relative">
-      {/* Slide card — marked inert when locked so keyboard / AT cannot reach content */}
+      {/* Slide card — marked inert when locked so keyboard / AT cannot reach content.
+          outline-none: tabIndex={-1} is for programmatic focus only (useFocusOnMount);
+          not keyboard-Tab reachable, so no visible focus ring is required here. */}
       <div
         ref={containerRef}
         tabIndex={-1}

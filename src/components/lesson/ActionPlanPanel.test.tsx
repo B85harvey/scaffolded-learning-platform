@@ -32,11 +32,12 @@ const aimScaffold: SlideConfig = {
   section: 'aim',
   mode: 'framed',
   config: {
-    type: 'framed',
-    frame: 'The [[topic]] is a [[quality]] technology.',
+    id: 'aim-scaffold',
+    targetQuestion: 'What is the aim?',
+    mode: 'framed',
     prompts: [
-      { id: 'topic', label: 'Topic', hint: '' },
-      { id: 'quality', label: 'Quality', hint: '' },
+      { id: 'topic', text: 'Topic', hint: '' },
+      { id: 'quality', text: 'Quality', hint: '' },
     ],
   },
 }
@@ -47,9 +48,10 @@ const issuesScaffold: SlideConfig = {
   section: 'issues',
   mode: 'framed',
   config: {
-    type: 'framed',
-    frame: 'The [[issue]] is relevant.',
-    prompts: [{ id: 'issue', label: 'Issue', hint: '' }],
+    id: 'issues-scaffold',
+    targetQuestion: 'What is the issue?',
+    mode: 'framed',
+    prompts: [{ id: 'issue', text: 'Issue', hint: '' }],
   },
 }
 

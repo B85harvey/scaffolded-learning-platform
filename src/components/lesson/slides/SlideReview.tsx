@@ -185,7 +185,7 @@ function DownloadMenu() {
                 className={cn(
                   'w-full px-4 py-2 text-left font-sans text-sm text-ga-ink',
                   'hover:bg-ga-surface-muted',
-                  'focus-visible:bg-ga-surface-muted focus-visible:outline-none'
+                  'focus-visible:bg-ga-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ga-primary/40'
                 )}
               >
                 {item.label}

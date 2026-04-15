@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLesson } from '@/contexts/LessonContext'
 import type { LessonState } from '@/contexts/lessonReducer'
 import { ActionPlanPanel } from './ActionPlanPanel'
+import { DevToolbar } from './DevToolbar'
 import { ShortcutHelpDialog } from './ShortcutHelpDialog'
 import { SlideFrame } from './SlideFrame'
 import { SlideContent } from './slides/SlideContent'
@@ -146,17 +147,38 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
   const canGoNext =
     state.currentSlideIndex < totalSlides - 1 && slideCanAdvance(currentSlide, state)
 
-  // ── Global "?" shortcut — opens ShortcutHelpDialog ───────────────────────
+  // ── Global keyboard shortcuts ─────────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '?' && !isTextInput(e.target)) {
+      if (isTextInput(e.target)) return
+
+      if (e.key === '?') {
         e.preventDefault()
         dispatch({ type: state.ui.shortcutsOpen ? 'CLOSE_SHORTCUTS' : 'OPEN_SHORTCUTS' })
+        return
+      }
+
+      // Arrow Right: advance to next slide when eligible
+      if (e.key === 'ArrowRight' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (canGoNext) {
+          e.preventDefault()
+          dispatch({ type: 'NEXT' })
+        }
+        return
+      }
+
+      // Arrow Left: go back
+      if (e.key === 'ArrowLeft' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (canGoBack) {
+          e.preventDefault()
+          dispatch({ type: 'BACK' })
+        }
+        return
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [dispatch, state.ui.shortcutsOpen])
+  }, [dispatch, state.ui.shortcutsOpen, canGoNext, canGoBack])
 
   // ── Dev helper: window.__revealMcq(slideId) — toggles class reveal ───────
   useEffect(() => {
@@ -168,10 +190,13 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
     }
   }, [dispatch])
 
+  const isDevMode = typeof window !== 'undefined' && window.location.search.includes('dev=1')
+
   return (
     <>
       {state.ui.shortcutsOpen && <ShortcutHelpDialog />}
       <ToastRegion />
+      {isDevMode && <DevToolbar />}
       <div className="flex min-h-screen flex-col bg-ga-surface-muted">
         {/* ── Header ────────────────────────────────────────────────────────── */}
         {/* Two-row header, total ~88 px. Horizontal padding matches the main slide area. */}

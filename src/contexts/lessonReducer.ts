@@ -36,6 +36,7 @@ export type LessonAction =
   | { type: 'OPEN_SHORTCUTS' }
   | { type: 'CLOSE_SHORTCUTS' }
   | { type: 'SET_REVIEW_TAB'; tab: 'raw' | 'polished' }
+  | { type: 'RESET_ALL' }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -196,6 +197,18 @@ export function lessonReducer(state: LessonState, action: LessonAction): LessonS
 
     case 'SET_REVIEW_TAB': {
       return { ...state, ui: { ...state.ui, reviewTab: action.tab } }
+    }
+
+    case 'RESET_ALL': {
+      return {
+        ...state,
+        currentSlideIndex: 0,
+        answers: {},
+        committed: {},
+        committedSlideIds: [],
+        locks: {},
+        classReveal: {},
+      }
     }
 
     default: {
