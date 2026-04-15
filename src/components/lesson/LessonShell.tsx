@@ -1,8 +1,11 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLesson } from '@/contexts/LessonContext'
+import type { LessonState } from '@/contexts/lessonReducer'
 import { ActionPlanPanel } from './ActionPlanPanel'
 import { SlideFrame } from './SlideFrame'
 import { SlideContent } from './slides/SlideContent'
+import { SlideMcq } from './slides/SlideMcq'
+import { SlideScaffold } from './slides/SlideScaffold'
 import { SlidePlaceholder } from './slides/SlidePlaceholder'
 import type { LessonConfig, Section, SlideConfig } from '@/lessons/types'
 
@@ -35,11 +38,31 @@ function renderSlide(slide: SlideConfig) {
     case 'content':
       return <SlideContent title={slide.title} body={slide.body} image={slide.image} />
     case 'mcq':
-      return <SlidePlaceholder type="mcq" />
+      return <SlideMcq slide={slide} />
     case 'scaffold':
-      return <SlidePlaceholder type="scaffold" />
+      return <SlideScaffold slide={slide} />
     case 'review':
       return <SlidePlaceholder type="review" />
+  }
+}
+
+/**
+ * Returns true when the student may advance past the given slide.
+ * Content and review slides are always passable. MCQ slides require a resolved
+ * answer (correct or revealed). Scaffold slides require a committed paragraph.
+ */
+function slideCanAdvance(slide: SlideConfig, state: LessonState): boolean {
+  switch (slide.type) {
+    case 'content':
+    case 'review':
+      return true
+    case 'mcq': {
+      const answers = state.answers[slide.id]
+      const resolvedId = answers?.kind === 'text' ? (answers.values['selection'] ?? '') : ''
+      return resolvedId !== ''
+    }
+    case 'scaffold':
+      return state.committedSlideIds.includes(slide.id)
   }
 }
 
@@ -109,7 +132,8 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
   const slideNumber = state.currentSlideIndex + 1
 
   const canGoBack = state.currentSlideIndex > 0
-  const canGoNext = state.currentSlideIndex < totalSlides - 1
+  const canGoNext =
+    state.currentSlideIndex < totalSlides - 1 && slideCanAdvance(currentSlide, state)
 
   return (
     <div className="flex min-h-screen flex-col bg-ga-surface-muted">

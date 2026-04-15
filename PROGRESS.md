@@ -143,3 +143,18 @@ Tracks all Phase 0 tasks. See `CLAUDE.md` for project context and conventions.
 - [x] Commit `feat(phase-2): lesson shell, slide frame, content slides`
 
 **153 tests passing (122 Slice 1 + 31 new). TypeScript clean. Build clean.**
+
+### Slice 3 — MCQ Self-Check and Framed Scaffold Wired to Engine
+
+- [x] `src/contexts/lessonReducer.ts` — added `committedSlideIds: string[]` to `LessonState`; COMMIT adds slide id, UNCOMMIT removes it
+- [x] `src/contexts/LessonContext.test.ts` — 4 new tests covering `committedSlideIds` in COMMIT, UNCOMMIT, and `makeLessonState`
+- [x] `src/lessons/engineAdapter.ts` — `buildEngineAnswers()` and `assembleSlide()` adapter between lesson state and Phase 1 engine
+- [x] `src/components/lesson/LessonShell.tsx` — `renderSlide()` wires `SlideMcq` and `SlideScaffold`; `slideCanAdvance()` gates Next for MCQ (resolved) and scaffold (committed)
+- [x] `src/components/lesson/slides/SlideMcq.tsx` — self-check MCQ: digit 1–6 selection, Enter to submit, Cmd/Ctrl+Enter shortcut, correct/incorrect visual states, two-wrong-attempts reveal, `aria-live` announcement, Next enabled on resolution
+- [x] `src/components/lesson/slides/SlideScaffold.tsx` — section badge, slide heading, framed/guided/freeform-table dispatcher, commit/edit button, Cmd/Ctrl+Enter shortcut, guided and freeform-table placeholder cards
+- [x] `src/components/lesson/slides/scaffold/FramedMode.tsx` — per-prompt label + auto-grow textarea + word/char counter + helper text + engine warning chips; read-only post-commit
+- [x] `src/components/lesson/slides/SlideMcq.test.tsx` — 11 RTL tests: rendering, digit selection, correct path, incorrect path, two-wrong-attempts reveal
+- [x] `src/components/lesson/slides/SlideScaffold.test.tsx` — 16 RTL tests: rendering, commit flow (click + Cmd+Enter), panel paragraph, read-only inputs, edit/revert; 7 countWords unit tests; 3 engineAdapter unit tests
+- [x] Accessibility checks: axe zero critical violations on Issues scaffold slide (manual), Tab order prompt → commit button confirmed, digit key focus confirmed
+
+**195 tests passing (153 Slice 2 + 42 new). TypeScript clean. Build clean.**

@@ -10,6 +10,8 @@ export interface LessonState {
   slides: SlideConfig[]
   answers: Record<string, SlideAnswers>
   committed: Record<string, CommittedParagraph>
+  /** Slide IDs that have been committed by the student (scaffold slides only). */
+  committedSlideIds: string[]
   locks: Record<string, boolean>
   ui: {
     shortcutsOpen: boolean
@@ -122,12 +124,17 @@ export function lessonReducer(state: LessonState, action: LessonAction): LessonS
         committedAt: Date.now(),
       }
 
+      const alreadyCommitted = state.committedSlideIds.includes(action.slideId)
+
       return {
         ...state,
         committed: {
           ...state.committed,
           [section]: committed,
         },
+        committedSlideIds: alreadyCommitted
+          ? state.committedSlideIds
+          : [...state.committedSlideIds, action.slideId],
       }
     }
 
@@ -139,7 +146,11 @@ export function lessonReducer(state: LessonState, action: LessonAction): LessonS
       const nextCommitted = { ...state.committed }
       delete nextCommitted[section]
 
-      return { ...state, committed: nextCommitted }
+      return {
+        ...state,
+        committed: nextCommitted,
+        committedSlideIds: state.committedSlideIds.filter((id) => id !== action.slideId),
+      }
     }
 
     case 'TOGGLE_LOCK': {
@@ -180,6 +191,7 @@ export function makeLessonState(lessonId: string, slides: SlideConfig[]): Lesson
     slides,
     answers: {},
     committed: {},
+    committedSlideIds: [],
     locks: {},
     ui: { shortcutsOpen: false, reviewTab: 'raw' },
   }

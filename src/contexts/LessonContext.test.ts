@@ -304,6 +304,24 @@ describe('COMMIT', () => {
     expect(next.committed['aim']?.committedAt).toBeGreaterThan(0)
   })
 
+  it('adds the slide id to committedSlideIds when committing a scaffold slide', () => {
+    const state = makeState()
+    const next = lessonReducer(state, { type: 'COMMIT', slideId: 'slide-03' })
+    expect(next.committedSlideIds).toContain('slide-03')
+  })
+
+  it('does not duplicate an id in committedSlideIds on repeated commits', () => {
+    const state = makeState({ committedSlideIds: ['slide-03'] })
+    const next = lessonReducer(state, { type: 'COMMIT', slideId: 'slide-03' })
+    expect(next.committedSlideIds.filter((id) => id === 'slide-03')).toHaveLength(1)
+  })
+
+  it('does not add to committedSlideIds for a non-scaffold slide', () => {
+    const state = makeState()
+    const next = lessonReducer(state, { type: 'COMMIT', slideId: 'slide-01' })
+    expect(next.committedSlideIds).toEqual([])
+  })
+
   it('records engine warnings alongside the committed paragraph', () => {
     // Commit with empty answers — engine emits EMPTY_ANSWER warnings
     const state = makeState()
@@ -396,6 +414,13 @@ describe('UNCOMMIT', () => {
     expect(next.committed['aim']).toBeUndefined()
   })
 
+  it('removes the slide id from committedSlideIds', () => {
+    const state = makeState({ committedSlideIds: ['slide-03', 'slide-04'] })
+    const next = lessonReducer(state, { type: 'UNCOMMIT', slideId: 'slide-03' })
+    expect(next.committedSlideIds).not.toContain('slide-03')
+    expect(next.committedSlideIds).toContain('slide-04')
+  })
+
   it('does not affect other committed sections', () => {
     const state = makeState({
       committed: {
@@ -482,6 +507,7 @@ describe('makeLessonState', () => {
     expect(state.answers).toEqual({})
     expect(state.committed).toEqual({})
     expect(state.locks).toEqual({})
+    expect(state.committedSlideIds).toEqual([])
   })
 
   it('initialises the ui with shortcuts closed and raw tab', () => {
