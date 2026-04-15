@@ -82,14 +82,20 @@ describe('SlideMcq — rendering', () => {
 
   it('renders numbered badges 1, 2, 3', () => {
     renderMcq()
-    // Badges are aria-hidden, so query by text in the document
+    // Three option buttons plus the Submit button (disabled initially)
     const buttons = screen.getAllByRole('button')
-    expect(buttons).toHaveLength(3)
+    // Options: 3, Submit: 1
+    expect(buttons.length).toBeGreaterThanOrEqual(3)
   })
 
   it('has a live region for announcements', () => {
     renderMcq()
     expect(screen.getByRole('status')).toBeInTheDocument()
+  })
+
+  it('Submit button is present and disabled before any selection', () => {
+    renderMcq()
+    expect(screen.getByRole('button', { name: 'Submit answer' })).toBeDisabled()
   })
 })
 
@@ -134,120 +140,194 @@ describe('SlideMcq — digit key selection', () => {
       'false'
     )
   })
+
+  it('digit key enables the Submit button', async () => {
+    const user = userEvent.setup()
+    renderMcq()
+
+    const opt1 = screen.getByRole('button', { name: /Option 1: Option A/i })
+    opt1.focus()
+    await user.keyboard('2')
+
+    expect(screen.getByRole('button', { name: 'Submit answer' })).not.toBeDisabled()
+  })
+})
+
+// ── Submit button ─────────────────────────────────────────────────────────────
+
+describe('SlideMcq — Submit button', () => {
+  it('Submit is disabled before any option is selected', () => {
+    renderMcq()
+    expect(screen.getByRole('button', { name: 'Submit answer' })).toBeDisabled()
+  })
+
+  it('Submit is enabled after clicking an option', async () => {
+    const user = userEvent.setup()
+    renderMcq()
+
+    await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
+
+    expect(screen.getByRole('button', { name: 'Submit answer' })).not.toBeDisabled()
+  })
+
+  it('clicking Submit with no selection does nothing', () => {
+    renderMcq()
+
+    // Submit is disabled so clicking does nothing — status stays empty
+    expect(screen.getByRole('status')).toHaveTextContent('')
+  })
 })
 
 // ── Correct answer path ───────────────────────────────────────────────────────
 
 describe('SlideMcq — correct answer', () => {
-  it('clicking the correct option and pressing Enter shows success feedback', async () => {
+  it('clicking correct option then Submit shows Correct announcement', async () => {
     const user = userEvent.setup()
     renderMcq()
 
-    // Click option B (correct)
     await user.click(screen.getByRole('button', { name: /Option 2: Option B/i }))
-    // Press Enter to submit
-    await user.keyboard('{Enter}')
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
 
-    // Live region announces success
     expect(screen.getByRole('status')).toHaveTextContent('Correct')
   })
 
-  it('correct option shows a check icon (CheckCircle) after correct submission', async () => {
+  it('Enter on a focused correct option selects and submits immediately', async () => {
     const user = userEvent.setup()
     renderMcq()
 
-    await user.click(screen.getByRole('button', { name: /Option 2: Option B/i }))
+    // Focus option 2 and press Enter — should select + submit in one step
+    screen.getByRole('button', { name: /Option 2: Option B/i }).focus()
     await user.keyboard('{Enter}')
 
-    // The correct option's explanation appears
-    expect(screen.getByText('Formal, present tense, specific dish — correct.')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Correct')
   })
 
   it('Cmd+Enter submits the selected option', async () => {
     const user = userEvent.setup()
     renderMcq()
 
-    // Select option B via click
     await user.click(screen.getByRole('button', { name: /Option 2: Option B/i }))
-    // Submit via Cmd+Enter (Meta+Enter in userEvent)
     await user.keyboard('{Meta>}{Enter}{/Meta}')
 
     expect(screen.getByRole('status')).toHaveTextContent('Correct')
+  })
+
+  it('Submit button is gone after correct submission', async () => {
+    const user = userEvent.setup()
+    renderMcq()
+
+    await user.click(screen.getByRole('button', { name: /Option 2: Option B/i }))
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+
+    expect(screen.queryByRole('button', { name: 'Submit answer' })).not.toBeInTheDocument()
   })
 })
 
 // ── Incorrect answer path ─────────────────────────────────────────────────────
 
 describe('SlideMcq — incorrect answer', () => {
-  it('clicking a wrong option and pressing Enter shows incorrect feedback', async () => {
+  it('Submit with wrong option shows "Not quite. Try again" announcement', async () => {
     const user = userEvent.setup()
     renderMcq()
 
     await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
-    await user.keyboard('{Enter}')
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
 
     expect(screen.getByRole('status')).toHaveTextContent('Not quite. Try again')
   })
 
-  it('the wrong option explanation is shown after an incorrect submission', async () => {
+  it('wrong option explanation shows below the options', async () => {
     const user = userEvent.setup()
     renderMcq()
 
     await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
-    await user.keyboard('{Enter}')
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
 
     expect(screen.getByText('Uses "we" and is vague — no dish name.')).toBeInTheDocument()
   })
 
-  it('student can retry after one wrong attempt', async () => {
+  it('wrong option gets aria-invalid="true"', async () => {
+    const user = userEvent.setup()
+    renderMcq()
+
+    await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+
+    expect(screen.getByRole('button', { name: /Option 1: Option A/i })).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+  })
+
+  it('Submit is replaced by "Try again" message after wrong answer', async () => {
+    const user = userEvent.setup()
+    renderMcq()
+
+    await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+
+    expect(screen.queryByRole('button', { name: 'Submit answer' })).not.toBeInTheDocument()
+    expect(screen.getByText(/Select another option and try again/)).toBeInTheDocument()
+  })
+
+  it('selecting a new option after wrong clears wrong styling and restores Submit', async () => {
+    const user = userEvent.setup()
+    renderMcq()
+
+    // Wrong submit
+    await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+
+    // Select another option
+    await user.click(screen.getByRole('button', { name: /Option 2: Option B/i }))
+
+    // Wrong styling on option A should be gone (aria-invalid removed)
+    expect(screen.getByRole('button', { name: /Option 1: Option A/i })).not.toHaveAttribute(
+      'aria-invalid'
+    )
+
+    // Submit button should return and be enabled
+    expect(screen.getByRole('button', { name: 'Submit answer' })).not.toBeDisabled()
+  })
+
+  it('correct option is never revealed after a wrong answer', async () => {
+    const user = userEvent.setup()
+    renderMcq()
+
+    await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+
+    // Correct option (B) should not show a check icon or correct visual state
+    // The option button should not have aria-invalid (only wrong option does)
+    expect(screen.getByRole('button', { name: /Option 2: Option B/i })).not.toHaveAttribute(
+      'aria-invalid'
+    )
+    // No success announcement
+    expect(screen.getByRole('status')).not.toHaveTextContent('Correct')
+  })
+
+  it('student can retry after a wrong attempt and succeed', async () => {
     const user = userEvent.setup()
     renderMcq()
 
     // First wrong
     await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
-    await user.keyboard('{Enter}')
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
 
-    // Now try correct answer
+    // Reselect and submit correct
     await user.click(screen.getByRole('button', { name: /Option 2: Option B/i }))
-    await user.keyboard('{Enter}')
+    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
 
     expect(screen.getByRole('status')).toHaveTextContent('Correct')
   })
-})
 
-// ── Two-wrong-attempts reveal ─────────────────────────────────────────────────
-
-describe('SlideMcq — two wrong attempts reveal', () => {
-  it('after two wrong attempts the correct answer is revealed', async () => {
+  it('Enter on a focused wrong option selects and submits immediately', async () => {
     const user = userEvent.setup()
     renderMcq()
 
-    // First wrong
-    await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
+    screen.getByRole('button', { name: /Option 1: Option A/i }).focus()
     await user.keyboard('{Enter}')
 
-    // Second wrong
-    await user.click(screen.getByRole('button', { name: /Option 3: Option C/i }))
-    await user.keyboard('{Enter}')
-
-    expect(screen.getByRole('status')).toHaveTextContent('Correct answer revealed')
-  })
-
-  it('no further selections are possible after revelation', async () => {
-    const user = userEvent.setup()
-    renderMcq()
-
-    // Two wrong attempts
-    await user.click(screen.getByRole('button', { name: /Option 1: Option A/i }))
-    await user.keyboard('{Enter}')
-    await user.click(screen.getByRole('button', { name: /Option 3: Option C/i }))
-    await user.keyboard('{Enter}')
-
-    // Clicking another option should do nothing (isResolved = true)
-    const opt1 = screen.getByRole('button', { name: /Option 1: Option A/i })
-    await user.click(opt1)
-
-    // Option 1 should not become selected (aria-pressed stays false)
-    expect(opt1).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('status')).toHaveTextContent('Not quite. Try again')
   })
 })

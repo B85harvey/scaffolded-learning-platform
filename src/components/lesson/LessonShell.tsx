@@ -58,8 +58,8 @@ function slideCanAdvance(slide: SlideConfig, state: LessonState): boolean {
       return true
     case 'mcq': {
       const answers = state.answers[slide.id]
-      const resolvedId = answers?.kind === 'text' ? (answers.values['selection'] ?? '') : ''
-      return resolvedId !== ''
+      const mcqResult = answers?.kind === 'text' ? (answers.values['mcqResult'] ?? '') : ''
+      return mcqResult === 'correct'
     }
     case 'scaffold':
       return state.committedSlideIds.includes(slide.id)
