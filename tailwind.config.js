@@ -69,6 +69,12 @@ export default {
         card: '0 2px 8px rgba(55, 71, 79, 0.08)',
         'card-hover': '0 4px 16px rgba(55, 71, 79, 0.12)',
       },
+      ringColor: {
+        DEFAULT: '#04a9f5',
+      },
+      ringOffsetColor: {
+        DEFAULT: '#04a9f5',
+      },
     },
   },
   plugins: [],
