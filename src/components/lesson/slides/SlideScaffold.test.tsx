@@ -6,7 +6,7 @@ import { makeLessonState } from '@/contexts/lessonReducer'
 import { SlideScaffold } from './SlideScaffold'
 import { ActionPlanPanel } from '@/components/lesson/ActionPlanPanel'
 import { countWords } from './scaffold/wordCounter'
-import type { SlideConfig } from '@/lessons/types'
+import type { SlideConfig, SlideAnswers } from '@/lessons/types'
 
 // ── matchMedia stub ───────────────────────────────────────────────────────────
 
@@ -297,6 +297,242 @@ describe('countWords', () => {
 
   it('handles leading and trailing whitespace', () => {
     expect(countWords('  hello world  ')).toBe(2)
+  })
+})
+
+// ── Guided mode ───────────────────────────────────────────────────────────────
+
+const guidedSlide: Extract<SlideConfig, { type: 'scaffold' }> = {
+  id: 'slide-12-decision-scaffold',
+  type: 'scaffold',
+  section: 'decision',
+  mode: 'guided',
+  config: {
+    id: 'decision',
+    targetQuestion: 'State your group\u2019s Decision in one sentence.',
+    mode: 'guided',
+    sectionHeading: 'Decision',
+    prompts: [
+      {
+        id: 'decision-sentence',
+        text: 'Write one sentence that names the dish (with all elements), the assigned technology, the video format, and the target audience.',
+        maxWords: 60,
+        hint: 'The group will produce [dish] using the [technology], showcased through a [format] targeting [audience].',
+      },
+    ],
+  },
+}
+
+function renderGuided(initialAnswers?: Record<string, SlideAnswers>) {
+  const allSlidesGuided = [guidedSlide] as SlideConfig[]
+  const baseState = makeLessonState('test-lesson', allSlidesGuided)
+  const state = initialAnswers ? { ...baseState, answers: initialAnswers } : baseState
+  return render(
+    <LessonProvider initialState={state}>
+      <SlideScaffold slide={guidedSlide} />
+      <ActionPlanPanel scribe="Alex Chen" />
+    </LessonProvider>
+  )
+}
+
+describe('SlideScaffold — guided mode', () => {
+  it('renders the slide heading', () => {
+    renderGuided()
+    expect(
+      screen.getByRole('heading', { name: 'State your group\u2019s Decision in one sentence.' })
+    ).toBeInTheDocument()
+  })
+
+  it('renders the prompt label and input', () => {
+    renderGuided()
+    expect(
+      screen.getByLabelText(
+        'Write one sentence that names the dish (with all elements), the assigned technology, the video format, and the target audience.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('renders the hint text', () => {
+    renderGuided()
+    expect(screen.getByText(/The group will produce \[dish\]/)).toBeInTheDocument()
+  })
+
+  it('Commit button is disabled when the prompt is empty', () => {
+    renderGuided()
+    expect(screen.getByRole('button', { name: 'Commit' })).toBeDisabled()
+  })
+
+  it('Commit button is enabled after filling the prompt', async () => {
+    const user = userEvent.setup()
+    renderGuided()
+    await user.type(
+      screen.getByLabelText(
+        'Write one sentence that names the dish (with all elements), the assigned technology, the video format, and the target audience.'
+      ),
+      'The group will produce custard French toast using the Thermomix, showcased through a tutorial targeting home cooks.'
+    )
+    expect(screen.getByRole('button', { name: 'Commit' })).not.toBeDisabled()
+  })
+
+  it('Cmd+Enter commits when prompt is filled', async () => {
+    const user = userEvent.setup()
+    renderGuided()
+    const input = screen.getByLabelText(
+      'Write one sentence that names the dish (with all elements), the assigned technology, the video format, and the target audience.'
+    )
+    await user.type(input, 'The group will produce custard French toast using the Thermomix.')
+    input.focus()
+    await user.keyboard('{Meta>}{Enter}{/Meta}')
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Commit' })).not.toBeInTheDocument()
+  })
+
+  it('the Action Plan panel shows Decision text after commit', async () => {
+    const user = userEvent.setup()
+    renderGuided()
+    const input = screen.getByLabelText(
+      'Write one sentence that names the dish (with all elements), the assigned technology, the video format, and the target audience.'
+    )
+    await user.type(input, 'The group will produce custard French toast using the Thermomix.')
+    await user.click(screen.getByRole('button', { name: 'Commit' }))
+    const panel = screen.getByRole('complementary', { name: 'Action Plan so far' })
+    expect(within(panel).getByText(/custard French toast/)).toBeInTheDocument()
+  })
+
+  it('Edit round-trip reverts panel to "Not yet written"', async () => {
+    const user = userEvent.setup()
+    renderGuided()
+    const input = screen.getByLabelText(
+      'Write one sentence that names the dish (with all elements), the assigned technology, the video format, and the target audience.'
+    )
+    await user.type(input, 'The group will produce custard French toast using the Thermomix.')
+    await user.click(screen.getByRole('button', { name: 'Commit' }))
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    const panel = screen.getByRole('complementary', { name: 'Action Plan so far' })
+    expect(within(panel).queryByText(/custard French toast/)).not.toBeInTheDocument()
+    expect(within(panel).getAllByText('Not yet written').length).toBeGreaterThan(0)
+  })
+})
+
+// ── Freeform-table mode ───────────────────────────────────────────────────────
+
+const freeformSlide: Extract<SlideConfig, { type: 'scaffold' }> = {
+  id: 'slide-15-implementation-scaffold',
+  type: 'scaffold',
+  section: 'implementation',
+  mode: 'freeform-table',
+  config: {
+    id: 'implementation',
+    targetQuestion: 'Build the Implementation table for your group.',
+    mode: 'freeform-table',
+    sectionHeading: 'Implementation',
+    template: {
+      columns: [
+        { id: 'when', label: 'When' },
+        { id: 'what', label: 'What', hint: 'Describe the specific task or activity.' },
+        { id: 'why', label: 'Why', hint: 'Explain the purpose, not just the action.' },
+      ],
+      minRows: 6,
+      rowLabels: ['Week 6', 'Week 7', 'Week 8', 'Week 9', 'Week 10', 'Week 11'],
+    },
+  },
+}
+
+const FULL_TABLE_ROWS: Array<Record<string, string>> = [
+  { what: 'Research the Thermomix', why: 'Understand the technology before cooking.' },
+  { what: 'Order ingredients', why: 'Ensure all ingredients are ready on time.' },
+  { what: 'Mise en place', why: 'Set up an efficient cooking environment.' },
+  { what: 'Film the cooking session', why: 'Document the process for the video.' },
+  { what: 'Edit the video footage', why: 'Create the final polished product.' },
+  { what: 'Review and submit', why: 'Ensure quality before final submission.' },
+]
+
+function renderFreeform(
+  initialAnswers?: Record<string, SlideAnswers>,
+  committedSlideIds?: string[]
+) {
+  const allSlidesFreeform = [freeformSlide] as SlideConfig[]
+  const baseState = makeLessonState('test-lesson', allSlidesFreeform)
+  const state = {
+    ...baseState,
+    ...(initialAnswers ? { answers: initialAnswers } : {}),
+    ...(committedSlideIds ? { committedSlideIds } : {}),
+  }
+  return render(
+    <LessonProvider initialState={state}>
+      <SlideScaffold slide={freeformSlide} />
+      <ActionPlanPanel scribe="Alex Chen" />
+    </LessonProvider>
+  )
+}
+
+describe('SlideScaffold — freeform-table mode', () => {
+  it('renders the column headers', () => {
+    renderFreeform()
+    expect(screen.getByRole('columnheader', { name: 'When' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'What' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Why' })).toBeInTheDocument()
+  })
+
+  it('renders the Add row button', () => {
+    renderFreeform()
+    expect(screen.getByRole('button', { name: 'Add row' })).toBeInTheDocument()
+  })
+
+  it('the first column cells for labelled rows are read-only', () => {
+    renderFreeform()
+    // "Week 6: When" is the sr-only label for the first cell of row 0
+    const cell = screen.getByLabelText('Week 6: When')
+    expect(cell).toHaveAttribute('readonly')
+  })
+
+  it('Commit is disabled when no rows are filled', () => {
+    renderFreeform()
+    expect(screen.getByRole('button', { name: 'Commit' })).toBeDisabled()
+  })
+
+  it('Commit is enabled when all six rows are pre-seeded with content', () => {
+    renderFreeform({
+      [freeformSlide.id]: { kind: 'table', rows: FULL_TABLE_ROWS },
+    })
+    expect(screen.getByRole('button', { name: 'Commit' })).not.toBeDisabled()
+  })
+
+  it('the Action Plan panel shows Implementation table text after commit', async () => {
+    const user = userEvent.setup()
+    renderFreeform({ [freeformSlide.id]: { kind: 'table', rows: FULL_TABLE_ROWS } })
+    await user.click(screen.getByRole('button', { name: 'Commit' }))
+    const panel = screen.getByRole('complementary', { name: 'Action Plan so far' })
+    expect(within(panel).getByText(/Week 6/)).toBeInTheDocument()
+    expect(within(panel).getByText(/Research the Thermomix/)).toBeInTheDocument()
+  })
+
+  it('Edit round-trip reverts panel to "Not yet written"', async () => {
+    const user = userEvent.setup()
+    renderFreeform({ [freeformSlide.id]: { kind: 'table', rows: FULL_TABLE_ROWS } })
+    await user.click(screen.getByRole('button', { name: 'Commit' }))
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    const panel = screen.getByRole('complementary', { name: 'Action Plan so far' })
+    expect(within(panel).queryByText(/Research the Thermomix/)).not.toBeInTheDocument()
+    expect(within(panel).getAllByText('Not yet written').length).toBeGreaterThan(0)
+  })
+
+  it('Add row adds a new editable row', async () => {
+    const user = userEvent.setup()
+    renderFreeform()
+    // Initially 6 rows (minRows): find the "Row 7" label after adding
+    await user.click(screen.getByRole('button', { name: 'Add row' }))
+    // Row 7 has no rowLabel so the sr-only label format is "Row 7: When"
+    expect(screen.getByLabelText('Row 7: When')).toBeInTheDocument()
+    expect(screen.getByLabelText('Row 7: What')).toBeInTheDocument()
+    expect(screen.getByLabelText('Row 7: Why')).toBeInTheDocument()
+  })
+
+  it('Add row button is hidden after commit', async () => {
+    const user = userEvent.setup()
+    renderFreeform({ [freeformSlide.id]: { kind: 'table', rows: FULL_TABLE_ROWS } })
+    await user.click(screen.getByRole('button', { name: 'Commit' }))
+    expect(screen.queryByRole('button', { name: 'Add row' })).not.toBeInTheDocument()
   })
 })
 

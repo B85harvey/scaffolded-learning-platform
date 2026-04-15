@@ -5,6 +5,8 @@ import { assembleSlide } from '@/lessons/engineAdapter'
 import type { Warning } from '@/lib/scaffold'
 import type { SlideConfig } from '@/lessons/types'
 import { FramedMode } from './scaffold/FramedMode'
+import { GuidedMode } from './scaffold/GuidedMode'
+import { FreeformTableMode } from './scaffold/FreeformTableMode'
 
 type ScaffoldSlide = Extract<SlideConfig, { type: 'scaffold' }>
 
@@ -21,17 +23,6 @@ interface SlideScaffoldProps {
   slide: ScaffoldSlide
 }
 
-// ── Placeholder for modes not yet built ───────────────────────────────────────
-
-function ModePlaceholder({ mode }: { mode: 'guided' | 'freeform-table' }) {
-  const label = mode === 'guided' ? 'Guided' : 'Freeform table'
-  return (
-    <div className="flex min-h-[160px] flex-col items-center justify-center rounded-ga-md border border-dashed border-ga-border-subtle bg-ga-surface-muted p-10 text-center">
-      <p className="text-base font-medium text-ga-ink">{label} mode coming in the next slice.</p>
-    </div>
-  )
-}
-
 // ── SlideScaffold ─────────────────────────────────────────────────────────────
 
 export function SlideScaffold({ slide }: SlideScaffoldProps) {
@@ -45,12 +36,31 @@ export function SlideScaffold({ slide }: SlideScaffoldProps) {
 
   // ── Commit gate ─────────────────────────────────────────────────────────────
 
-  const prompts = slide.config.prompts ?? []
   const slideAnswers = state.answers[slide.id]
-  const textValues = slideAnswers?.kind === 'text' ? slideAnswers.values : {}
 
-  const emptyPrompts = prompts.filter((p) => !textValues[p.id]?.trim())
-  const canCommit = !isCommitted && emptyPrompts.length === 0
+  let canCommit: boolean
+  let emptyPrompts: typeof slide.config.prompts = []
+
+  if (slide.mode === 'freeform-table') {
+    const template = slide.config.template
+    const cols = template?.columns ?? []
+    const minRows = template?.minRows ?? 1
+    const rowLabels = template?.rowLabels ?? []
+    const tableRows = slideAnswers?.kind === 'table' ? slideAnswers.rows : []
+    const hasEnoughRows = tableRows.length >= minRows
+    const allCellsFilled = tableRows.every((row, rowIdx) =>
+      cols.every((col, colIdx) => {
+        if (colIdx === 0 && rowLabels[rowIdx] !== undefined) return true
+        return (row[col.id] ?? '').trim().length > 0
+      })
+    )
+    canCommit = !isCommitted && hasEnoughRows && allCellsFilled
+  } else {
+    const prompts = slide.config.prompts ?? []
+    const textValues = slideAnswers?.kind === 'text' ? slideAnswers.values : {}
+    emptyPrompts = prompts.filter((p) => !textValues[p.id]?.trim())
+    canCommit = !isCommitted && emptyPrompts.length === 0
+  }
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -76,11 +86,16 @@ export function SlideScaffold({ slide }: SlideScaffoldProps) {
 
   // ── Tooltip for disabled commit button ──────────────────────────────────────
 
-  const missingLabels = emptyPrompts
+  const missingLabels = (emptyPrompts ?? [])
     .slice(0, 3)
     .map((p) => p.text.split(' ').slice(0, 4).join(' ') + (p.text.split(' ').length > 4 ? '…' : ''))
     .join(', ')
-  const commitTooltip = !canCommit && !isCommitted ? `Fill in: ${missingLabels}` : undefined
+  const commitTooltip =
+    !canCommit && !isCommitted
+      ? missingLabels
+        ? `Fill in: ${missingLabels}`
+        : 'Fill in the table to continue'
+      : undefined
 
   // ── Section label ───────────────────────────────────────────────────────────
 
@@ -104,9 +119,9 @@ export function SlideScaffold({ slide }: SlideScaffoldProps) {
       {slide.mode === 'framed' ? (
         <FramedMode slide={slide} warnings={warnings} isCommitted={isCommitted} />
       ) : slide.mode === 'guided' ? (
-        <ModePlaceholder mode="guided" />
+        <GuidedMode slide={slide} warnings={warnings} isCommitted={isCommitted} />
       ) : (
-        <ModePlaceholder mode="freeform-table" />
+        <FreeformTableMode slide={slide} warnings={warnings} isCommitted={isCommitted} />
       )}
 
       {/* Commit / Edit button — bottom right */}
