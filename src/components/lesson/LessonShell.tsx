@@ -138,28 +138,27 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
   return (
     <div className="flex min-h-screen flex-col bg-ga-surface-muted">
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-10 flex h-16 items-center border-b border-ga-border-subtle bg-ga-surface px-6">
-        {/* Left: title + section name */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-sans text-base font-semibold leading-5 text-ga-ink">
+      {/* Two-row header, total ~88 px. Horizontal padding matches the main slide area. */}
+      <header className="sticky top-0 z-10 border-b border-ga-border-subtle bg-ga-surface">
+        {/* Row 1: lesson title (left) + save status (right) */}
+        <div data-testid="header-row-1" className="flex h-11 items-center px-6 lg:px-8">
+          <p className="min-w-0 flex-1 truncate font-sans text-lg font-semibold leading-snug text-ga-ink">
             {lesson.title}
           </p>
-          <p className="font-sans text-xs text-ga-ink-muted">
+          <SaveStatus />
+        </div>
+
+        {/* Row 2: section name (left) + progress dots (right) */}
+        <div data-testid="header-row-2" className="flex h-11 items-center px-6 lg:px-8">
+          <p className="font-sans text-sm text-ga-ink-muted">
             {SECTION_LABELS[currentSlide.section] ?? currentSlide.section}
           </p>
-        </div>
-
-        {/* Centre: progress dots */}
-        <div className="absolute left-1/2 -translate-x-1/2">
-          <ProgressDots
-            currentSection={currentSlide.section as Section}
-            committedSections={state.committed}
-          />
-        </div>
-
-        {/* Right: save status */}
-        <div className="flex flex-1 justify-end">
-          <SaveStatus />
+          <div className="ml-auto">
+            <ProgressDots
+              currentSection={currentSlide.section as Section}
+              committedSections={state.committed}
+            />
+          </div>
         </div>
       </header>
 
@@ -176,7 +175,7 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
 
         {/* Action Plan Panel — 360 px at lg, 300 px at md, hidden below */}
         <div className="hidden md:block md:w-[300px] lg:w-[360px]">
-          <div className="sticky top-16 h-[calc(100vh-64px-64px)] overflow-y-auto">
+          <div className="sticky top-[88px] h-[calc(100vh-88px-64px)] overflow-y-auto">
             <ActionPlanPanel scribe={lesson.scribe} />
           </div>
         </div>

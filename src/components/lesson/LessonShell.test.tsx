@@ -78,6 +78,39 @@ describe('LessonShell — initial render', () => {
   })
 })
 
+// ── Header layout ─────────────────────────────────────────────────────────────
+
+describe('LessonShell — header layout', () => {
+  it('lesson title and progress dots are in separate row containers', () => {
+    renderShell()
+
+    const row1 = screen.getByTestId('header-row-1')
+    const row2 = screen.getByTestId('header-row-2')
+    const title = screen.getByText('Unit 2 Kitchen Technologies: Writing the Group Action Plan')
+    const dots = screen.getByRole('progressbar', { name: 'Lesson progress' })
+
+    expect(row1).toContainElement(title)
+    expect(row2).toContainElement(dots)
+    expect(row1).not.toContainElement(dots)
+    expect(row2).not.toContainElement(title)
+  })
+
+  it('save status chip is in row 1 alongside the title', () => {
+    renderShell()
+    const row1 = screen.getByTestId('header-row-1')
+    const saveChip = screen.getByText('Saved locally')
+    expect(row1).toContainElement(saveChip)
+  })
+
+  it('section name is in row 2 alongside the dots', () => {
+    renderShell()
+    const row2 = screen.getByTestId('header-row-2')
+    // Slide 1 is in the orientation section
+    const sectionName = screen.getByText('Orientation')
+    expect(row2).toContainElement(sectionName)
+  })
+})
+
 // ── Navigation ────────────────────────────────────────────────────────────────
 
 describe('LessonShell — keyboard navigation', () => {
