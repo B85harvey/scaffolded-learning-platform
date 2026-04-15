@@ -1,4 +1,4 @@
-# PROGRESS.md — Phase 0: Foundation
+# PROGRESS.md — Phase 0 & Phase 1
 
 Tracks all Phase 0 tasks. See `CLAUDE.md` for project context and conventions.
 
@@ -79,3 +79,26 @@ Tracks all Phase 0 tasks. See `CLAUDE.md` for project context and conventions.
 ---
 
 **Phase 0 closed 15 April 2026. Profile trigger verified live. Ready for Phase 1.**
+
+---
+
+## Phase 1: Scaffold Engine
+
+- [x] Install Vitest and configure test runner (`npm test`)
+- [x] `src/lib/scaffold/types.ts` — all shared types
+- [x] `src/lib/scaffold/warnings.ts` — warning codes and factory helpers
+- [x] `src/lib/scaffold/frame-parser.ts` — `parseFrame()` with MALFORMED_FRAME and MULTIPLE_ANSWER_TOKENS
+- [x] `src/lib/scaffold/assemblers/framed.ts` — `assembleFramed()`
+- [x] `src/lib/scaffold/assemblers/guided.ts` — `assembleGuided()`
+- [x] `src/lib/scaffold/assemblers/freeform-table.ts` — `assembleFreeformTable()`
+- [x] `src/lib/scaffold/stitcher.ts` — `assemble()` dispatcher and `assembleFullDocument()`
+- [x] `src/lib/scaffold/sanitise.ts` — `sanitiseAnswer()` P1 helper
+- [x] `src/lib/scaffold/index.ts` — public API re-exports
+- [x] Fixtures: Roman Empire, Kitchen Tech Issues, Kitchen Tech Decision, Kitchen Tech Implementation, Kitchen Tech full document
+- [x] Test suite: 90 tests across 5 files — frame-parser, framed, guided, freeform-table, stitcher
+- [x] Playground route at `/_playground/scaffold` with five presets
+- [x] Tag `phase1-complete`
+
+---
+
+**Phase 1 closed 15 April 2026. 90 tests passing. Three modes (framed, guided, freeform-table) and full-document stitcher working. Playground live at `/_playground/scaffold`.**
