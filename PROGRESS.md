@@ -23,46 +23,44 @@ Tracks all Phase 0 tasks. See `CLAUDE.md` for project context and conventions.
 
 ### Step 2 — Design Tokens & Typography
 
-- [ ] Install Poppins via Google Fonts in `index.html`
-- [ ] Set Poppins as default `sans` in `tailwind.config.js`
-- [ ] Define extended colour palette in `tailwind.config.js`
-- [ ] Define spacing, border-radius, and shadow tokens
-- [ ] Create a `Typography` showcase page or Storybook-style component
-- [ ] Tag `phase0-step2`
+- [x] Install Poppins via Fontsource (`@fontsource/poppins`) in `main.tsx`
+- [x] Set Poppins as default `sans` in `tailwind.config.js`
+- [x] Define extended colour palette in `tailwind.config.js` (`ga.*`)
+- [x] Define border-radius and shadow tokens (`shadow-card`, `rounded-sm/md/lg`)
+- [x] Install Lucide React
+- [x] Tag `phase0-step2`
 
 ### Step 3 — Supabase Setup
 
-- [ ] Create Supabase project
-- [ ] Add environment variables (`.env.local`) — `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-- [ ] Install `@supabase/supabase-js`
-- [ ] Create `src/lib/supabase.ts` client singleton
-- [ ] Define initial database schema (users, groups, sessions, slides, responses)
-- [ ] Apply schema via Supabase migrations
-- [ ] Tag `phase0-step3`
+- [x] Create Supabase project (`rpkvvgzwjeyiumrduufv`)
+- [x] Add environment variables (`.env`) — `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- [x] Install `@supabase/supabase-js`
+- [x] Create `src/lib/supabase.ts` typed client singleton
+- [x] Create `src/types/supabase.ts` stub (replace with `supabase gen types` after schema settled)
+- [x] Define initial database schema — `profiles` table with RLS and trigger
+- [x] Tag `phase0-step3`
 
 ### Step 4 — Auth (Magic Link)
 
-- [ ] Install and configure Resend
-- [ ] Enable Supabase Auth with magic link (email OTP)
-- [ ] Wire Resend as custom SMTP in Supabase
-- [ ] Create `useAuth` hook
-- [ ] Build login page (email input → send magic link)
-- [ ] Handle auth callback / session restore on load
-- [ ] Protected route wrapper component
-- [ ] Tag `phase0-step4`
+- [x] Enable Supabase Auth with magic link (email OTP)
+- [x] Create `src/lib/auth.ts` — `signInWithEmail()` and `signOut()`
+- [x] Build `/auth/signin` page (email input → send magic link)
+- [x] Build `/auth/callback` page (exchange code → redirect to `/`)
+- [x] Supabase redirect URL whitelisted for Vercel domain
+- [x] Smoke test passed: magic link delivered, session established, home page loads
+- [x] Tag `phase0-step4`
 
 ### Step 5 — Routing & Shell
 
-- [ ] Install TanStack Router (or React Router v6 — decide)
-- [ ] Define route structure: `/login`, `/dashboard`, `/session/:id`, `/admin`
-- [ ] Build app shell (nav bar, layout wrapper)
-- [ ] Implement protected vs. public route guards
-- [ ] Tag `phase0-step5`
+- [x] Install React Router v6 (`react-router-dom`)
+- [x] Define route structure: `/`, `/auth/signin`, `/auth/callback`
+- [x] SPA rewrite rule in `vercel.json` (all paths → `index.html`)
+- [x] Deployed to Vercel (`scaffolded-learning-platform.vercel.app`)
+- [x] Tag `phase0-step5`
 
 ### Step 6 — TanStack Query Setup
 
-- [ ] Install `@tanstack/react-query`
-- [ ] Wrap app in `QueryClientProvider`
-- [ ] Configure default stale/cache times
-- [ ] Create first query hook as proof-of-concept (e.g. `useCurrentUser`)
-- [ ] Tag `phase0-step6`
+- [x] Install `@tanstack/react-query`
+- [x] Wrap app in `QueryClientProvider` in `main.tsx`
+- [x] Configure default stale time (5 min) and retry (1)
+- [x] Tag `phase0-step6`
