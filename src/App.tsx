@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { SkipToContent } from '@/components/SkipToContent'
 import { Callback } from '@/pages/auth/Callback'
 import { SignIn } from '@/pages/auth/SignIn'
+import { LessonPage } from '@/pages/lesson/LessonPage'
 import { ScaffoldPlayground } from '@/routes/_playground/scaffold'
 
 function Home() {
@@ -26,6 +27,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/auth/signin" element={<SignIn />} />
         <Route path="/auth/callback" element={<Callback />} />
+        <Route path="/lesson/:id" element={<LessonPage />} />
         <Route path="/_playground/scaffold" element={<ScaffoldPlayground />} />
       </Routes>
     </BrowserRouter>
