@@ -146,3 +146,19 @@
 .slide-enter {
   animation: slide-enter var(--ga-duration-base) var(--ga-ease-standard) both;
 }
+
+/* ── Toast enter animation ─────────────────────────────────────────────────── */
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-enter {
+  animation: toast-enter var(--ga-duration-base) var(--ga-ease-standard) both;
+}

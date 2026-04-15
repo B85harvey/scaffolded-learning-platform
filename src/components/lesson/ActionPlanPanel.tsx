@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils'
 import { useLesson } from '@/contexts/LessonContext'
 import type { CommittedParagraph } from '@/lessons/types'
 
@@ -11,14 +12,26 @@ const SECTIONS: { key: string; label: string }[] = [
 ]
 
 interface SectionBlockProps {
+  sectionKey: string
   label: string
   committed: CommittedParagraph | undefined
+  onNavigate: () => void
 }
 
-function SectionBlock({ label, committed }: SectionBlockProps) {
+function SectionBlock({ label, committed, onNavigate }: SectionBlockProps) {
   return (
     <div>
-      <h3 className="mb-3 font-sans text-base font-semibold leading-6 text-ga-ink">{label}</h3>
+      <button
+        type="button"
+        onClick={onNavigate}
+        className={cn(
+          'mb-3 font-sans text-base font-semibold leading-6 text-ga-ink',
+          'rounded-ga-sm transition-colors hover:text-ga-primary',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/40 focus-visible:ring-offset-2'
+        )}
+      >
+        {label}
+      </button>
 
       {committed ? (
         <p className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-ga-ink">
@@ -38,7 +51,14 @@ interface ActionPlanPanelProps {
 }
 
 export function ActionPlanPanel({ scribe }: ActionPlanPanelProps) {
-  const { state } = useLesson()
+  const { state, dispatch } = useLesson()
+
+  const navigateToSection = (sectionKey: string) => {
+    const slide = state.slides.find((s) => s.type === 'scaffold' && s.section === sectionKey)
+    if (slide) {
+      dispatch({ type: 'GOTO', slideId: slide.id })
+    }
+  }
 
   return (
     <aside
@@ -54,7 +74,13 @@ export function ActionPlanPanel({ scribe }: ActionPlanPanelProps) {
       {/* Section blocks */}
       <div className="flex flex-col gap-10">
         {SECTIONS.map(({ key, label }) => (
-          <SectionBlock key={key} label={label} committed={state.committed[key]} />
+          <SectionBlock
+            key={key}
+            sectionKey={key}
+            label={label}
+            committed={state.committed[key]}
+            onNavigate={() => navigateToSection(key)}
+          />
         ))}
       </div>
     </aside>

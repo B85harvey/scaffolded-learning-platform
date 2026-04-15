@@ -8,7 +8,8 @@ import { SlideFrame } from './SlideFrame'
 import { SlideContent } from './slides/SlideContent'
 import { SlideMcq } from './slides/SlideMcq'
 import { SlideScaffold } from './slides/SlideScaffold'
-import { SlidePlaceholder } from './slides/SlidePlaceholder'
+import { SlideReview } from './slides/SlideReview'
+import { ToastRegion } from '@/components/ui/Toast'
 import type { LessonConfig, Section, SlideConfig } from '@/lessons/types'
 
 // ── Section dot config ────────────────────────────────────────────────────────
@@ -44,7 +45,7 @@ function renderSlide(slide: SlideConfig) {
     case 'scaffold':
       return <SlideScaffold slide={slide} />
     case 'review':
-      return <SlidePlaceholder type="review" />
+      return <SlideReview />
   }
 }
 
@@ -170,6 +171,7 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
   return (
     <>
       {state.ui.shortcutsOpen && <ShortcutHelpDialog />}
+      <ToastRegion />
       <div className="flex min-h-screen flex-col bg-ga-surface-muted">
         {/* ── Header ────────────────────────────────────────────────────────── */}
         {/* Two-row header, total ~88 px. Horizontal padding matches the main slide area. */}
