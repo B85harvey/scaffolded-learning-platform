@@ -102,3 +102,23 @@ Tracks all Phase 0 tasks. See `CLAUDE.md` for project context and conventions.
 ---
 
 **Phase 1 closed 15 April 2026. 90 tests passing. Three modes (framed, guided, freeform-table) and full-document stitcher working. Playground live at `/_playground/scaffold`.**
+
+---
+
+## Phase 2: Lesson Shell and Slide Types
+
+### Slice 1 — Route, Data Module, and Lesson Context
+
+- [x] Create `phase-2` git branch
+- [x] `src/lessons/types.ts` — SlideConfig discriminated union, Section, Image, McqOption, CommittedParagraph, SlideAnswers, LessonConfig
+- [x] `src/lessons/kitchen-technologies.ts` — all 17 slides hardcoded, typed against SlideConfig; imports ScaffoldConfig from Phase 1 engine
+- [x] `src/lessons/index.ts` — getLessonById() registry
+- [x] `src/components/lesson/LessonShell.tsx` — placeholder shell rendering lesson title
+- [x] `src/pages/lesson/LessonPage.tsx` — reads :id param, looks up lesson, renders shell or "Lesson not found"
+- [x] `src/contexts/lessonReducer.ts` — LessonState, LessonAction union (10 actions), lessonReducer, makeLessonState; COMMIT calls Phase 1 assemble()
+- [x] `src/contexts/LessonContext.tsx` — LessonProvider and useLesson() hook
+- [x] `src/contexts/LessonContext.test.ts` — 32 tests covering every reducer action and edge cases
+- [x] `src/App.tsx` — /lesson/:id route added
+- [x] Commit `feat(phase-2): route, data module, and lesson context` on phase-2 branch
+
+**122 tests passing (90 Phase 1 + 32 new). TypeScript clean. Build clean.**
