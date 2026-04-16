@@ -14,6 +14,7 @@ import { AdminUnitManager } from '@/pages/admin/AdminUnitManager'
 import { LessonPage } from '@/pages/lesson/LessonPage'
 import { SessionSummary } from '@/pages/SessionSummary'
 import { ScaffoldPlayground } from '@/routes/_playground/scaffold'
+import { ConnectionBanner } from '@/components/ui/ConnectionBanner'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ConnectionBanner />
         <Routes>
           {/* Public */}
           <Route path="/auth/signin" element={<SignIn />} />

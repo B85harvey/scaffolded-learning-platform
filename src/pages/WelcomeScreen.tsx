@@ -67,7 +67,7 @@ export function WelcomeScreen() {
       <button
         type="button"
         onClick={handleSkip}
-        className="absolute right-6 top-6 text-sm text-ga-textMuted underline-offset-2 hover:underline"
+        className="absolute right-6 top-6 rounded-sm text-sm text-ga-textMuted underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
       >
         Skip
       </button>

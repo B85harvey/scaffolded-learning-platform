@@ -64,7 +64,7 @@ function GroupCard({
           value={group.name}
           onChange={(e) => onNameChange(e.target.value)}
           placeholder="Group name"
-          className="flex-1 rounded-md border border-ga-border px-3 py-1.5 font-sans text-sm text-ga-text focus:outline-none focus:ring-2 focus:ring-ga-blue/50"
+          className="flex-1 rounded-md border border-ga-border px-3 py-1.5 font-sans text-sm text-ga-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
         />
       </div>
 
@@ -87,7 +87,7 @@ function GroupCard({
               type="button"
               data-testid={`remove-member-${group.id}-${m.studentId}`}
               onClick={() => onRemoveStudent(m.studentId)}
-              className="text-xs text-ga-textMuted hover:text-ga-danger"
+              className="rounded-sm text-xs text-ga-textMuted hover:text-ga-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-1"
             >
               Remove
             </button>
@@ -103,9 +103,10 @@ function GroupCard({
         <div className="flex gap-2">
           <select
             data-testid={`add-student-select-${group.id}`}
+            aria-label="Add student to group"
             value={addingId}
             onChange={(e) => setAddingId(e.target.value)}
-            className="flex-1 rounded-md border border-ga-border px-2 py-1 font-sans text-sm text-ga-text"
+            className="flex-1 rounded-md border border-ga-border px-2 py-1 font-sans text-sm text-ga-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
           >
             <option value="">Select student…</option>
             {unassigned.map((s) => (
@@ -124,7 +125,7 @@ function GroupCard({
                 setAddingId('')
               }
             }}
-            className="rounded-md bg-ga-blue px-3 py-1 text-xs font-semibold text-white hover:bg-ga-blue-dark disabled:opacity-50"
+            className="rounded-md bg-ga-blue px-3 py-1 text-xs font-semibold text-white hover:bg-ga-blue-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             Add
           </button>
@@ -429,7 +430,7 @@ export function AdminGroupForm() {
                   type="button"
                   data-testid="add-group-btn"
                   onClick={addGroup}
-                  className="rounded-md border border-ga-border px-4 py-2 text-sm font-medium text-ga-text hover:border-ga-primary"
+                  className="rounded-md border border-ga-border px-4 py-2 text-sm font-medium text-ga-text hover:border-ga-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
                 >
                   + Add group
                 </button>
@@ -438,7 +439,7 @@ export function AdminGroupForm() {
                   data-testid="save-groups-btn"
                   disabled={saving || groups.length === 0}
                   onClick={() => void handleSave()}
-                  className="rounded-md bg-ga-primary px-4 py-2 text-sm font-semibold text-white hover:bg-ga-primary-dark disabled:opacity-50"
+                  className="rounded-md bg-ga-primary px-4 py-2 text-sm font-semibold text-white hover:bg-ga-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/50 focus-visible:ring-offset-2 disabled:opacity-50"
                 >
                   {saving ? 'Saving…' : 'Save groups'}
                 </button>

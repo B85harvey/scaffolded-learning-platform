@@ -147,14 +147,14 @@ export function AdminUnitManager() {
                 type="button"
                 data-testid="confirm-close-btn"
                 onClick={() => handleClose(confirmingClose)}
-                className="rounded-md bg-ga-danger px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                className="rounded-md bg-ga-danger px-4 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-danger/50 focus-visible:ring-offset-2"
               >
                 Close unit
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingClose(null)}
-                className="rounded-md border border-ga-border px-4 py-2 text-sm font-medium text-ga-text hover:border-ga-primary"
+                className="rounded-md border border-ga-border px-4 py-2 text-sm font-medium text-ga-text hover:border-ga-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
               >
                 Cancel
               </button>
@@ -199,9 +199,10 @@ export function AdminUnitManager() {
                         <button
                           type="button"
                           data-testid={`open-btn-${unit.id}`}
+                          aria-label={`Open ${unit.title}`}
                           disabled={isBusy}
                           onClick={() => handleOpen(unit.id)}
-                          className="rounded-md bg-ga-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-ga-blue-dark disabled:opacity-50"
+                          className="rounded-md bg-ga-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-ga-blue-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2 disabled:opacity-50"
                         >
                           {isBusy ? '…' : 'Open'}
                         </button>
@@ -212,9 +213,10 @@ export function AdminUnitManager() {
                         <button
                           type="button"
                           data-testid={`close-btn-${unit.id}`}
+                          aria-label={`Close ${unit.title}`}
                           disabled={isBusy}
                           onClick={() => setConfirmingClose(unit.id)}
-                          className="rounded-md border border-ga-danger px-3 py-1.5 text-xs font-semibold text-ga-danger hover:bg-ga-danger/10 disabled:opacity-50"
+                          className="rounded-md border border-ga-danger px-3 py-1.5 text-xs font-semibold text-ga-danger hover:bg-ga-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-danger/50 focus-visible:ring-offset-2 disabled:opacity-50"
                         >
                           {isBusy ? '…' : 'Close'}
                         </button>

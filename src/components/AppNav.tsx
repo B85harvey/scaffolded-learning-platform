@@ -25,20 +25,32 @@ export function AppNav() {
     >
       {isTeacher ? (
         <div className="flex flex-1 items-center gap-6">
-          <Link to="/admin/class" className="text-sm font-medium text-ga-text hover:text-ga-blue">
+          <Link
+            to="/admin/class"
+            className="rounded-sm text-sm font-medium text-ga-text hover:text-ga-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
+          >
             Class
           </Link>
-          <Link to="/admin/units" className="text-sm font-medium text-ga-text hover:text-ga-blue">
+          <Link
+            to="/admin/units"
+            className="rounded-sm text-sm font-medium text-ga-text hover:text-ga-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
+          >
             Units
           </Link>
-          <Link to="/admin/groups" className="text-sm font-medium text-ga-text hover:text-ga-blue">
+          <Link
+            to="/admin/groups"
+            className="rounded-sm text-sm font-medium text-ga-text hover:text-ga-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
+          >
             Groups
           </Link>
         </div>
       ) : (
         <div className="flex flex-1 items-center gap-6">
           <span className="text-sm font-medium text-ga-text">{displayName}</span>
-          <Link to="/home" className="text-sm font-medium text-ga-text hover:text-ga-blue">
+          <Link
+            to="/home"
+            className="rounded-sm text-sm font-medium text-ga-text hover:text-ga-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
+          >
             Home
           </Link>
         </div>
@@ -48,7 +60,7 @@ export function AppNav() {
         type="button"
         onClick={handleSignOut}
         aria-label="Sign out"
-        className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-ga-textMuted transition-colors hover:text-ga-danger"
+        className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-ga-textMuted transition-colors hover:text-ga-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
       >
         <LogOut size={15} aria-hidden="true" />
         Sign out

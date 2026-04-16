@@ -109,7 +109,7 @@ export function SessionSummary() {
         <div className="mx-auto max-w-2xl">
           <Link
             to="/home"
-            className="mb-6 inline-flex items-center gap-1.5 text-sm text-ga-textMuted hover:text-ga-text"
+            className="mb-6 inline-flex items-center gap-1.5 rounded-sm text-sm text-ga-textMuted hover:text-ga-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
           >
             <ArrowLeft size={14} aria-hidden="true" />
             Back to home

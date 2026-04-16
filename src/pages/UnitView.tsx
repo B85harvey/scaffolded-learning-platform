@@ -65,7 +65,7 @@ function LessonCard({ lesson, progress, unitClosed, studentId }: LessonCardProps
         <Link
           to={`/session/${lesson.id}/${studentId ?? ''}`}
           data-testid="action-plan-link"
-          className="mt-1 block text-xs font-medium text-ga-blue underline-offset-2 hover:underline"
+          className="mt-1 block rounded-sm text-xs font-medium text-ga-blue underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-1"
         >
           View Summary
         </Link>
@@ -201,7 +201,7 @@ export function UnitView() {
           {/* Back arrow */}
           <Link
             to="/home"
-            className="mb-6 inline-flex items-center gap-1.5 text-sm text-ga-textMuted hover:text-ga-text"
+            className="mb-6 inline-flex items-center gap-1.5 rounded-sm text-sm text-ga-textMuted hover:text-ga-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
           >
             <ArrowLeft size={14} aria-hidden="true" />
             Back to home
