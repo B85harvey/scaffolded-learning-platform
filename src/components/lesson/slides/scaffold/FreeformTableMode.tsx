@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { useLesson } from '@/contexts/LessonContext'
 import type { Warning } from '@/lib/scaffold'
 import type { SlideConfig } from '@/lessons/types'
+import { db } from '@/lib/dexieDb'
 
 type ScaffoldSlide = Extract<SlideConfig, { type: 'scaffold' }>
 
@@ -82,6 +83,28 @@ export function FreeformTableMode({ slide, warnings, isCommitted }: FreeformTabl
   const [rowKeys, setRowKeys] = useState<string[]>(() =>
     Array.from({ length: Math.max(tableRows.length, minRows) }, () => crypto.randomUUID())
   )
+
+  // ── Autosave table rows to Dexie ─────────────────────────────────────────
+  // Each row is serialised as a JSON string and stored with promptId 'row-{i}'.
+  useEffect(() => {
+    const timerIds: ReturnType<typeof setTimeout>[] = []
+    tableRows.forEach((row, rowIdx) => {
+      const id = setTimeout(() => {
+        void db.drafts.put({
+          id: `${state.lessonId}:${slide.id}:row-${rowIdx}`,
+          lessonId: state.lessonId,
+          slideId: slide.id,
+          promptId: `row-${rowIdx}`,
+          value: JSON.stringify(row),
+          updatedAt: Date.now(),
+          syncedAt: null,
+        })
+      }, 400)
+      timerIds.push(id)
+    })
+    return () => timerIds.forEach(clearTimeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableAnswers])
 
   // ── Initialise missing rows in the reducer on mount ───────────────────────
 

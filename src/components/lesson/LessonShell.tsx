@@ -4,6 +4,7 @@ import { useLesson } from '@/contexts/LessonContext'
 import type { LessonState } from '@/contexts/lessonReducer'
 import { ActionPlanPanel } from './ActionPlanPanel'
 import { DevToolbar } from './DevToolbar'
+import { SaveStatusChip } from './SaveStatusChip'
 import { ShortcutHelpDialog } from './ShortcutHelpDialog'
 import { SlideFrame } from './SlideFrame'
 import { SlideContent } from './slides/SlideContent'
@@ -11,7 +12,12 @@ import { SlideMcq } from './slides/SlideMcq'
 import { SlideScaffold } from './slides/SlideScaffold'
 import { SlideReview } from './slides/SlideReview'
 import { ToastRegion } from '@/components/ui/Toast'
+import { useBackgroundSync } from '@/hooks/useBackgroundSync'
+import { syncDirtyDrafts, updateProgress } from '@/lib/syncService'
 import type { LessonConfig, Section, SlideConfig } from '@/lessons/types'
+
+// Phase 3: studentId will come from auth context once wired. null = unauthenticated.
+const STUDENT_ID: string | null = null
 
 // ── Section dot config ────────────────────────────────────────────────────────
 
@@ -109,22 +115,6 @@ function ProgressDots({ currentSection, committedSections }: DotsProps) {
   )
 }
 
-// ── SaveStatus chip ───────────────────────────────────────────────────────────
-
-function SaveStatus() {
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="flex items-center gap-1.5"
-      aria-label="Save status: saved to this device"
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-ga-amber-solid" aria-hidden="true" />
-      <span className="font-sans text-sm text-ga-ink-muted">Saved locally</span>
-    </div>
-  )
-}
-
 // ── LessonShellInner — uses context ───────────────────────────────────────────
 
 /** Returns true when the event target is a text-entry element. */
@@ -180,6 +170,26 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [dispatch, state.ui.shortcutsOpen, canGoNext, canGoBack])
 
+  // ── Background sync ───────────────────────────────────────────────────────
+  useBackgroundSync(STUDENT_ID, lesson.id, true)
+
+  // ── Progress tracking ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const isLast = state.currentSlideIndex === state.slides.length - 1
+    const status =
+      state.currentSlideIndex === 0 ? 'not_started' : isLast ? 'complete' : 'in_progress'
+    void updateProgress(STUDENT_ID, lesson.id, state.currentSlideIndex, status)
+  }, [lesson.id, state.currentSlideIndex, state.slides.length])
+
+  // ── beforeunload: best-effort sync ───────────────────────────────────────
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      void syncDirtyDrafts(STUDENT_ID, lesson.id)
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [lesson.id])
+
   // ── Dev helper: window.__revealMcq(slideId) — toggles class reveal ───────
   useEffect(() => {
     if (!import.meta.env.DEV) return
@@ -206,7 +216,7 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
             <p className="min-w-0 flex-1 truncate font-sans text-lg font-semibold leading-snug text-ga-ink">
               {lesson.title}
             </p>
-            <SaveStatus />
+            <SaveStatusChip />
           </div>
 
           {/* Row 2: section name (left) + progress dots (right) */}

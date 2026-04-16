@@ -79,7 +79,7 @@ describe('LessonShell — initial render', () => {
 
   it('renders the save status chip', () => {
     renderShell()
-    expect(screen.getByText('Saved locally')).toBeInTheDocument()
+    expect(screen.getByTestId('save-status-chip')).toBeInTheDocument()
   })
 
   it('Back button is disabled on the first slide', () => {
@@ -113,7 +113,7 @@ describe('LessonShell — header layout', () => {
   it('save status chip is in row 1 alongside the title', () => {
     renderShell()
     const row1 = screen.getByTestId('header-row-1')
-    const saveChip = screen.getByText('Saved locally')
+    const saveChip = screen.getByTestId('save-status-chip')
     expect(row1).toContainElement(saveChip)
   })
 

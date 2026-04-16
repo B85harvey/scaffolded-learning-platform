@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { useLesson } from '@/contexts/LessonContext'
 import type { Warning } from '@/lib/scaffold'
 import type { SlideConfig } from '@/lessons/types'
+import { PromptAutosave } from '@/hooks/useAutosave'
 import { countWords } from './wordCounter'
 
 type ScaffoldSlide = Extract<SlideConfig, { type: 'scaffold' }>
@@ -116,6 +117,12 @@ export function GuidedMode({ slide, warnings, isCommitted }: GuidedModeProps) {
 
         return (
           <div key={prompt.id}>
+            <PromptAutosave
+              lessonId={state.lessonId}
+              slideId={slide.id}
+              promptId={prompt.id}
+              value={value}
+            />
             {/* Label row: prompt question + word/char counter */}
             <div className="mb-2 flex min-w-0 items-start justify-between gap-3">
               <label

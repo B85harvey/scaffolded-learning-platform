@@ -3,6 +3,10 @@
  *
  * Replace with generated output once the schema is stable:
  *   npx supabase gen types typescript --project-id <project-id> > src/types/supabase.ts
+ *
+ * GenericTable (from @supabase/postgrest-js) requires a non-optional
+ * Relationships field. All tables here have no FK relationships that need
+ * TypeScript tracking, so we type them as [].
  */
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
@@ -43,6 +47,7 @@ export interface Database {
           created_at?: Timestamptz
           updated_at?: Timestamptz
         }
+        Relationships: []
       }
 
       // ── classes ──────────────────────────────────────────────
@@ -65,6 +70,7 @@ export interface Database {
           name?: string
           created_at?: Timestamptz
         }
+        Relationships: []
       }
 
       // ── class_members ────────────────────────────────────────
@@ -87,6 +93,7 @@ export interface Database {
           student_id?: UUID | null
           joined_at?: Timestamptz
         }
+        Relationships: []
       }
 
       // ── groups ───────────────────────────────────────────────
@@ -109,6 +116,7 @@ export interface Database {
           class_id?: UUID | null
           group_name?: string
         }
+        Relationships: []
       }
 
       // ── group_members ────────────────────────────────────────
@@ -131,6 +139,7 @@ export interface Database {
           student_id?: UUID | null
           is_scribe?: boolean
         }
+        Relationships: []
       }
 
       // ── unit_assignments ─────────────────────────────────────
@@ -159,6 +168,7 @@ export interface Database {
           opened_at?: Timestamptz | null
           closed_at?: Timestamptz | null
         }
+        Relationships: []
       }
 
       // ── slide_locks ──────────────────────────────────────────
@@ -187,6 +197,7 @@ export interface Database {
           locked?: boolean
           updated_at?: Timestamptz
         }
+        Relationships: []
       }
 
       // ── lesson_submissions ───────────────────────────────────
@@ -221,6 +232,7 @@ export interface Database {
           committed_paragraph?: string | null
           committed_at?: Timestamptz
         }
+        Relationships: []
       }
 
       // ── lesson_drafts ────────────────────────────────────────
@@ -252,6 +264,7 @@ export interface Database {
           value?: string | null
           updated_at?: Timestamptz
         }
+        Relationships: []
       }
 
       // ── lesson_progress ──────────────────────────────────────
@@ -280,6 +293,7 @@ export interface Database {
           status?: 'not_started' | 'in_progress' | 'complete'
           updated_at?: Timestamptz
         }
+        Relationships: []
       }
     }
     Views: Record<string, never>

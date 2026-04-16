@@ -3,6 +3,11 @@ import { CheckCircle, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLesson } from '@/contexts/LessonContext'
 import type { McqOption, SlideConfig } from '@/lessons/types'
+import { useAutosave } from '@/hooks/useAutosave'
+import { saveMcqAnswer } from '@/lib/syncService'
+
+// Phase 3: replaced with auth context value once wired
+const STUDENT_ID: string | null = null
 
 type McqSlide = Extract<SlideConfig, { type: 'mcq' }>
 
@@ -42,6 +47,9 @@ export function SlideMcq({ slide }: SlideMcqProps) {
 
   // Local UI state — resets on slide remount (key={slide.id} on SlideFrame)
   const [localSelection, setLocalSelection] = useState<string | undefined>(undefined)
+
+  // Autosave the current selection to Dexie
+  useAutosave(state.lessonId, slide.id, 'mcqSelection', localSelection ?? '')
   const [submittedWrongId, setSubmittedWrongId] = useState<string | undefined>(undefined)
   const [wrongExplanation, setWrongExplanation] = useState<string | undefined>(undefined)
   const [announcement, setAnnouncement] = useState('')
@@ -76,6 +84,8 @@ export function SlideMcq({ slide }: SlideMcqProps) {
         value: 'correct',
       })
       setAnnouncement('Correct')
+      // Persist correct answer to Supabase (best-effort)
+      void saveMcqAnswer(STUDENT_ID, state.lessonId, slide.id, selId)
     } else {
       const option = slide.options.find((o) => o.id === selId)
       setSubmittedWrongId(selId)

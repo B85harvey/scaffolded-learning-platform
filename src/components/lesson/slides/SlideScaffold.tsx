@@ -4,9 +4,13 @@ import { useLesson } from '@/contexts/LessonContext'
 import { assembleSlide } from '@/lessons/engineAdapter'
 import type { Warning } from '@/lib/scaffold'
 import type { SlideConfig } from '@/lessons/types'
+import { commitToSupabase } from '@/lib/syncService'
 import { FramedMode } from './scaffold/FramedMode'
 import { GuidedMode } from './scaffold/GuidedMode'
 import { FreeformTableMode } from './scaffold/FreeformTableMode'
+
+// Phase 3: replaced with auth context value once wired
+const STUDENT_ID: string | null = null
 
 type ScaffoldSlide = Extract<SlideConfig, { type: 'scaffold' }>
 
@@ -70,6 +74,22 @@ export function SlideScaffold({ slide }: SlideScaffoldProps) {
     const result = assembleSlide(slide, slideAnswers)
     setWarnings(result.warnings)
     dispatch({ type: 'COMMIT', slideId: slide.id })
+
+    // Persist committed paragraph to Supabase (best-effort, side-effect only)
+    const promptAnswers =
+      slideAnswers?.kind === 'text'
+        ? slideAnswers.values
+        : slideAnswers?.kind === 'table'
+          ? { rows: slideAnswers.rows }
+          : {}
+    void commitToSupabase(
+      STUDENT_ID,
+      state.lessonId,
+      slide.id,
+      slide.section,
+      promptAnswers,
+      result.paragraph
+    )
   }
 
   const handleEdit = () => {
