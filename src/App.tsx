@@ -17,6 +17,8 @@ import { ScaffoldPlayground } from '@/routes/_playground/scaffold'
 import { ConnectionBanner } from '@/components/ui/ConnectionBanner'
 import { TeacherLayout } from '@/components/teacher/TeacherLayout'
 import { TeacherLessonsPage } from '@/pages/teacher/TeacherLessonsPage'
+import { LessonEditor } from '@/pages/teacher/LessonEditor'
+import { NewLessonPage } from '@/pages/teacher/NewLessonPage'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 function App() {
@@ -110,6 +112,8 @@ function App() {
               </TeacherLayout>
             }
           />
+          <Route path="/teacher/lessons/new" element={<NewLessonPage />} />
+          <Route path="/teacher/lessons/:lessonId/edit" element={<LessonEditor />} />
           <Route
             path="/teacher/dashboard"
             element={
