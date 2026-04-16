@@ -1,25 +1,16 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { SkipToContent } from '@/components/SkipToContent'
+import { AdminRoute } from '@/components/auth/AdminRoute'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { AuthProvider } from '@/contexts/AuthContext'
 import { Callback } from '@/pages/auth/Callback'
 import { SignIn } from '@/pages/auth/SignIn'
+import { Home } from '@/pages/Home'
+import { WelcomeScreen } from '@/pages/WelcomeScreen'
+import { AdminClassForm } from '@/pages/admin/AdminClassForm'
 import { LessonPage } from '@/pages/lesson/LessonPage'
 import { ScaffoldPlayground } from '@/routes/_playground/scaffold'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
-
-function Home() {
-  return (
-    <>
-      <SkipToContent />
-      <main id="main" className="flex min-h-screen items-center justify-center">
-        <div className="rounded-lg bg-ga-card p-10 shadow-card">
-          <h1 className="font-sans text-4xl font-semibold tracking-tight text-ga-text">
-            Scaffolded Learning Platform
-          </h1>
-        </div>
-      </main>
-    </>
-  )
-}
 
 function App() {
   // Sets data-reduced-motion on <html> so CSS variables and selectors can gate
@@ -28,13 +19,63 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/auth/signin" element={<SignIn />} />
-        <Route path="/auth/callback" element={<Callback />} />
-        <Route path="/lesson/:id" element={<LessonPage />} />
-        <Route path="/_playground/scaffold" element={<ScaffoldPlayground />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          {/* Public */}
+          <Route path="/auth/signin" element={<SignIn />} />
+          <Route path="/auth/callback" element={<Callback />} />
+
+          {/* Student */}
+          <Route
+            path="/home"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/welcome"
+            element={
+              <ProtectedRoute>
+                <WelcomeScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lesson/:id"
+            element={
+              <ProtectedRoute>
+                <LessonPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin */}
+          <Route
+            path="/admin/class"
+            element={
+              <AdminRoute>
+                <AdminClassForm />
+              </AdminRoute>
+            }
+          />
+
+          {/* Dev tools */}
+          <Route
+            path="/_playground/scaffold"
+            element={
+              <>
+                <SkipToContent />
+                <ScaffoldPlayground />
+              </>
+            }
+          />
+
+          {/* Root — redirect authenticated users to /home, others to sign-in */}
+          <Route path="/" element={<Navigate to="/home" replace />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }
