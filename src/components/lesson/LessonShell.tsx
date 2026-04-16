@@ -11,13 +11,13 @@ import { SlideContent } from './slides/SlideContent'
 import { SlideMcq } from './slides/SlideMcq'
 import { SlideScaffold } from './slides/SlideScaffold'
 import { SlideReview } from './slides/SlideReview'
-import { ToastRegion } from '@/components/ui/Toast'
+import { ToastRegion, toast } from '@/components/ui/Toast'
 import { useBackgroundSync } from '@/hooks/useBackgroundSync'
 import { syncDirtyDrafts, updateProgress } from '@/lib/syncService'
+import { hydrateLesson, hydrateLessonFromDexie } from '@/lib/hydrateLesson'
+import { resolveResumeSlide } from '@/lib/resolveResumeSlide'
+import { supabase } from '@/lib/supabase'
 import type { LessonConfig, Section, SlideConfig } from '@/lessons/types'
-
-// Phase 3: studentId will come from auth context once wired. null = unauthenticated.
-const STUDENT_ID: string | null = null
 
 // ── Section dot config ────────────────────────────────────────────────────────
 
@@ -125,17 +125,88 @@ function isTextInput(target: EventTarget | null): boolean {
   return target.isContentEditable
 }
 
-function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
+const COMMITTED_SECTIONS = [
+  'aim',
+  'issues',
+  'decision',
+  'justification',
+  'implementation',
+  'references',
+] as const
+
+function LessonShellInner({
+  lesson,
+  studentId,
+}: {
+  lesson: LessonConfig
+  studentId: string | null
+}) {
   const { state, dispatch } = useLesson()
 
+  // Derived values — safe to compute before hooks (not hooks themselves).
   const currentSlide = state.slides[state.currentSlideIndex]
   const isLocked = Boolean(state.locks[currentSlide.id])
   const totalSlides = state.slides.length
   const slideNumber = state.currentSlideIndex + 1
-
   const canGoBack = state.currentSlideIndex > 0
   const canGoNext =
     state.currentSlideIndex < totalSlides - 1 && slideCanAdvance(currentSlide, state)
+  const isDevMode = typeof window !== 'undefined' && window.location.search.includes('dev=1')
+
+  // ── Hydration on mount ────────────────────────────────────────────────────
+  // All hooks must run unconditionally. The skeleton conditional return is
+  // placed AFTER all hooks to satisfy the rules of hooks.
+  useEffect(() => {
+    if (!studentId) return
+
+    async function run() {
+      try {
+        const [hydrated, locksResult] = await Promise.all([
+          hydrateLesson(studentId, lesson.id),
+          supabase.from('slide_locks').select('slide_id, locked').eq('lesson_id', lesson.id),
+        ])
+
+        const locks: Record<string, boolean> = {}
+        for (const row of locksResult.data ?? []) {
+          locks[row.slide_id] = row.locked
+        }
+
+        const resumeIdx = resolveResumeSlide(
+          lesson.slides,
+          hydrated.committed,
+          hydrated.currentSlideIndex,
+          locks
+        )
+
+        dispatch({
+          type: 'HYDRATE',
+          payload: {
+            answers: hydrated.answers,
+            committed: hydrated.committed,
+            locks,
+            currentSlideIndex: resumeIdx,
+          },
+        })
+      } catch {
+        // Network failure — fall back to local Dexie state only.
+        const fallback = await hydrateLessonFromDexie(lesson.id)
+        dispatch({
+          type: 'HYDRATE',
+          payload: {
+            answers: fallback.answers,
+            committed: fallback.committed,
+            locks: {},
+            currentSlideIndex: 0,
+          },
+        })
+        toast('Could not reach the server. Working from your local save.')
+      }
+    }
+
+    void run()
+    // Only run once per lesson mount — lesson.id is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lesson.id, studentId])
 
   // ── Global keyboard shortcuts ─────────────────────────────────────────────
   useEffect(() => {
@@ -171,24 +242,26 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
   }, [dispatch, state.ui.shortcutsOpen, canGoNext, canGoBack])
 
   // ── Background sync ───────────────────────────────────────────────────────
-  useBackgroundSync(STUDENT_ID, lesson.id, true)
+  useBackgroundSync(studentId, lesson.id, true)
 
-  // ── Progress tracking ─────────────────────────────────────────────────────
+  // ── Progress tracking — fires after NEXT, BACK, GOTO, and HYDRATE ────────
   useEffect(() => {
-    const isLast = state.currentSlideIndex === state.slides.length - 1
-    const status =
-      state.currentSlideIndex === 0 ? 'not_started' : isLast ? 'complete' : 'in_progress'
-    void updateProgress(STUDENT_ID, lesson.id, state.currentSlideIndex, status)
-  }, [lesson.id, state.currentSlideIndex, state.slides.length])
+    const slide = state.slides[state.currentSlideIndex]
+    const isReview = slide?.type === 'review'
+    const allSectionsCommitted = COMMITTED_SECTIONS.every((s) => Boolean(state.committed[s]))
+    const status: 'not_started' | 'in_progress' | 'complete' =
+      isReview && allSectionsCommitted ? 'complete' : 'in_progress'
+    void updateProgress(studentId, lesson.id, state.currentSlideIndex, status)
+  }, [lesson.id, state.currentSlideIndex, state.slides, state.committed, studentId])
 
   // ── beforeunload: best-effort sync ───────────────────────────────────────
   useEffect(() => {
     const handleBeforeUnload = () => {
-      void syncDirtyDrafts(STUDENT_ID, lesson.id)
+      void syncDirtyDrafts(studentId, lesson.id)
     }
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [lesson.id])
+  }, [lesson.id, studentId])
 
   // ── Dev helper: window.__revealMcq(slideId) — toggles class reveal ───────
   useEffect(() => {
@@ -200,7 +273,28 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
     }
   }, [dispatch])
 
-  const isDevMode = typeof window !== 'undefined' && window.location.search.includes('dev=1')
+  // ── Loading skeleton — shown while hydration is in flight ────────────────
+  // Placed AFTER all hooks so the hook call count never changes between renders.
+  if (!state.hydrated && studentId !== null) {
+    return (
+      <div
+        data-testid="lesson-skeleton"
+        aria-label="Loading lesson…"
+        aria-busy="true"
+        className="flex min-h-screen flex-col bg-ga-surface-muted"
+      >
+        <div className="h-[88px] animate-pulse border-b border-ga-border-subtle bg-ga-surface" />
+        <div className="flex flex-1 p-8">
+          <div className="mx-auto w-full max-w-[820px] space-y-4">
+            <div className="h-8 w-2/3 animate-pulse rounded-ga-md bg-ga-surface" />
+            <div className="h-4 w-full animate-pulse rounded-ga-md bg-ga-surface" />
+            <div className="h-4 w-5/6 animate-pulse rounded-ga-md bg-ga-surface" />
+            <div className="h-4 w-4/6 animate-pulse rounded-ga-md bg-ga-surface" />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -308,8 +402,14 @@ function LessonShellInner({ lesson }: { lesson: LessonConfig }) {
 
 interface LessonShellProps {
   lesson: LessonConfig
+  /**
+   * Authenticated student UUID. Null (default) when unauthenticated — skips
+   * network hydration and shows content immediately from initial state.
+   * Phase 3: will come from auth context once wired.
+   */
+  studentId?: string | null
 }
 
-export function LessonShell({ lesson }: LessonShellProps) {
-  return <LessonShellInner lesson={lesson} />
+export function LessonShell({ lesson, studentId = null }: LessonShellProps) {
+  return <LessonShellInner lesson={lesson} studentId={studentId} />
 }

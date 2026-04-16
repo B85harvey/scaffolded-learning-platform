@@ -15,6 +15,12 @@ export interface LessonState {
   locks: Record<string, boolean>
   /** class-check MCQ slides revealed by the teacher (dev toggle in Slice 6). */
   classReveal: Record<string, boolean>
+  /**
+   * True once a HYDRATE action has been processed. The HYDRATE action is a
+   * no-op when this is already true, preventing double-hydration within a
+   * session.
+   */
+  hydrated: boolean
   ui: {
     shortcutsOpen: boolean
     reviewTab: 'raw' | 'polished'
@@ -37,6 +43,15 @@ export type LessonAction =
   | { type: 'CLOSE_SHORTCUTS' }
   | { type: 'SET_REVIEW_TAB'; tab: 'raw' | 'polished' }
   | { type: 'RESET_ALL' }
+  | {
+      type: 'HYDRATE'
+      payload: {
+        answers: Record<string, SlideAnswers>
+        committed: Record<string, CommittedParagraph>
+        locks: Record<string, boolean>
+        currentSlideIndex: number
+      }
+    }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -211,6 +226,28 @@ export function lessonReducer(state: LessonState, action: LessonAction): LessonS
       }
     }
 
+    case 'HYDRATE': {
+      // Guard: only allow a single hydration per session.
+      if (state.hydrated) return state
+
+      const { answers, committed, locks, currentSlideIndex } = action.payload
+
+      // Rebuild committedSlideIds from the hydrated committed map + slides list.
+      const committedSlideIds = state.slides
+        .filter((s) => s.type === 'scaffold' && Boolean(committed[s.section]))
+        .map((s) => s.id)
+
+      return {
+        ...state,
+        answers,
+        committed,
+        locks,
+        currentSlideIndex: Math.max(0, Math.min(currentSlideIndex, state.slides.length - 1)),
+        committedSlideIds,
+        hydrated: true,
+      }
+    }
+
     default: {
       const _exhaustive: never = action
       return _exhaustive
@@ -230,6 +267,7 @@ export function makeLessonState(lessonId: string, slides: SlideConfig[]): Lesson
     committedSlideIds: [],
     locks: {},
     classReveal: {},
+    hydrated: false,
     ui: { shortcutsOpen: false, reviewTab: 'raw' },
   }
 }
