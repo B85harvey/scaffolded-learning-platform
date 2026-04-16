@@ -5,9 +5,11 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { Callback } from '@/pages/auth/Callback'
 import { SignIn } from '@/pages/auth/SignIn'
-import { Home } from '@/pages/Home'
+import { StudentHome } from '@/pages/StudentHome'
+import { UnitView } from '@/pages/UnitView'
 import { WelcomeScreen } from '@/pages/WelcomeScreen'
 import { AdminClassForm } from '@/pages/admin/AdminClassForm'
+import { AdminUnitManager } from '@/pages/admin/AdminUnitManager'
 import { LessonPage } from '@/pages/lesson/LessonPage'
 import { ScaffoldPlayground } from '@/routes/_playground/scaffold'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
@@ -30,7 +32,7 @@ function App() {
             path="/home"
             element={
               <ProtectedRoute>
-                <Home />
+                <StudentHome />
               </ProtectedRoute>
             }
           />
@@ -39,6 +41,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <WelcomeScreen />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/unit/:unitId"
+            element={
+              <ProtectedRoute>
+                <UnitView />
               </ProtectedRoute>
             }
           />
@@ -60,6 +70,14 @@ function App() {
               </AdminRoute>
             }
           />
+          <Route
+            path="/admin/units"
+            element={
+              <AdminRoute>
+                <AdminUnitManager />
+              </AdminRoute>
+            }
+          />
 
           {/* Dev tools */}
           <Route
@@ -72,7 +90,7 @@ function App() {
             }
           />
 
-          {/* Root — redirect authenticated users to /home, others to sign-in */}
+          {/* Root → /home */}
           <Route path="/" element={<Navigate to="/home" replace />} />
         </Routes>
       </AuthProvider>
