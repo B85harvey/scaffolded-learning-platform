@@ -3,10 +3,13 @@ import { getLessonById } from '@/lessons'
 import { LessonShell } from '@/components/lesson/LessonShell'
 import { LessonProvider } from '@/contexts/LessonContext'
 import { makeLessonState } from '@/contexts/lessonReducer'
+import { useAuth } from '@/contexts/AuthContext'
 
 export function LessonPage() {
   const { id } = useParams<{ id: string }>()
+  const { session } = useAuth()
   const lesson = id ? getLessonById(id) : undefined
+  const studentId = session?.user.id ?? null
 
   if (!lesson) {
     return (
@@ -23,7 +26,7 @@ export function LessonPage() {
 
   return (
     <LessonProvider initialState={makeLessonState(lesson.id, lesson.slides)}>
-      <LessonShell lesson={lesson} />
+      <LessonShell lesson={lesson} studentId={studentId} />
     </LessonProvider>
   )
 }

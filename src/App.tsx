@@ -9,8 +9,10 @@ import { StudentHome } from '@/pages/StudentHome'
 import { UnitView } from '@/pages/UnitView'
 import { WelcomeScreen } from '@/pages/WelcomeScreen'
 import { AdminClassForm } from '@/pages/admin/AdminClassForm'
+import { AdminGroupForm } from '@/pages/admin/AdminGroupForm'
 import { AdminUnitManager } from '@/pages/admin/AdminUnitManager'
 import { LessonPage } from '@/pages/lesson/LessonPage'
+import { SessionSummary } from '@/pages/SessionSummary'
 import { ScaffoldPlayground } from '@/routes/_playground/scaffold'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 
@@ -60,6 +62,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/session/:lessonId/:studentId"
+            element={
+              <ProtectedRoute>
+                <SessionSummary />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Admin */}
           <Route
@@ -75,6 +85,14 @@ function App() {
             element={
               <AdminRoute>
                 <AdminUnitManager />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/groups/:lessonId"
+            element={
+              <AdminRoute>
+                <AdminGroupForm />
               </AdminRoute>
             }
           />

@@ -185,3 +185,37 @@ describe('HYDRATE action', () => {
     expect(next.currentSlideIndex).toBe(SLIDES.length - 1)
   })
 })
+
+// ── SET_LOCK action ───────────────────────────────────────────────────────────
+
+describe('SET_LOCK action', () => {
+  it('sets a lock to true', () => {
+    const state = makeState()
+    const action: LessonAction = { type: 'SET_LOCK', slideId: 'slide-3', locked: true }
+    const next = lessonReducer(state, action)
+    expect(next.locks['slide-3']).toBe(true)
+  })
+
+  it('sets a lock to false', () => {
+    const state = { ...makeState(), locks: { 'slide-3': true } }
+    const action: LessonAction = { type: 'SET_LOCK', slideId: 'slide-3', locked: false }
+    const next = lessonReducer(state, action)
+    expect(next.locks['slide-3']).toBe(false)
+  })
+
+  it('does not affect other lock entries', () => {
+    const state = { ...makeState(), locks: { 'slide-aim': true } }
+    const action: LessonAction = { type: 'SET_LOCK', slideId: 'slide-issues', locked: true }
+    const next = lessonReducer(state, action)
+    expect(next.locks['slide-aim']).toBe(true)
+    expect(next.locks['slide-issues']).toBe(true)
+  })
+
+  it('overrides an existing lock value (true → false → true)', () => {
+    let state = makeState()
+    state = lessonReducer(state, { type: 'SET_LOCK', slideId: 'slide-aim', locked: true })
+    state = lessonReducer(state, { type: 'SET_LOCK', slideId: 'slide-aim', locked: false })
+    state = lessonReducer(state, { type: 'SET_LOCK', slideId: 'slide-aim', locked: true })
+    expect(state.locks['slide-aim']).toBe(true)
+  })
+})

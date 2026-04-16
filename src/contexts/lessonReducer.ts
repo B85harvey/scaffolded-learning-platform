@@ -38,6 +38,7 @@ export type LessonAction =
   | { type: 'COMMIT'; slideId: string }
   | { type: 'UNCOMMIT'; slideId: string }
   | { type: 'TOGGLE_LOCK'; slideId: string }
+  | { type: 'SET_LOCK'; slideId: string; locked: boolean }
   | { type: 'TOGGLE_CLASS_REVEAL'; slideId: string }
   | { type: 'OPEN_SHORTCUTS' }
   | { type: 'CLOSE_SHORTCUTS' }
@@ -188,6 +189,16 @@ export function lessonReducer(state: LessonState, action: LessonAction): LessonS
         locks: {
           ...state.locks,
           [action.slideId]: !state.locks[action.slideId],
+        },
+      }
+    }
+
+    case 'SET_LOCK': {
+      return {
+        ...state,
+        locks: {
+          ...state.locks,
+          [action.slideId]: action.locked,
         },
       }
     }

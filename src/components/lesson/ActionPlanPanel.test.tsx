@@ -67,7 +67,7 @@ function renderPanel(stateOverrides: Partial<LessonState> = {}) {
   const state = { ...base, ...stateOverrides }
   return render(
     <LessonProvider initialState={state}>
-      <ActionPlanPanel scribe="Test Scribe" />
+      <ActionPlanPanel scribeLabel="Test Scribe" />
     </LessonProvider>
   )
 }

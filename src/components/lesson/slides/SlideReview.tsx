@@ -2,18 +2,8 @@ import { useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useLesson } from '@/contexts/LessonContext'
 import { toast } from '@/components/ui/Toast'
+import { buildMarkdown, ActionPlanDocument } from '@/components/lesson/ActionPlanDocument'
 import type { CommittedParagraph } from '@/lessons/types'
-
-// ── Section config ────────────────────────────────────────────────────────────
-
-const SECTIONS: { key: string; label: string }[] = [
-  { key: 'aim', label: 'Aim' },
-  { key: 'issues', label: 'Issues' },
-  { key: 'decision', label: 'Decision' },
-  { key: 'justification', label: 'Justification' },
-  { key: 'implementation', label: 'Implementation' },
-  { key: 'references', label: 'References' },
-]
 
 // ── Word count helper ─────────────────────────────────────────────────────────
 
@@ -21,15 +11,6 @@ function countWords(paragraphs: Record<string, CommittedParagraph>): number {
   return Object.values(paragraphs)
     .map((p) => p.text.trim().split(/\s+/).filter(Boolean).length)
     .reduce((sum, n) => sum + n, 0)
-}
-
-// ── Raw markdown builder ──────────────────────────────────────────────────────
-
-function buildMarkdown(committed: Record<string, CommittedParagraph>): string {
-  return SECTIONS.map(({ key, label }) => {
-    const para = committed[key]
-    return para ? `## ${label}\n\n${para.text}` : `## ${label}\n\n*(Not yet written)*`
-  }).join('\n\n')
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -198,44 +179,6 @@ function DownloadMenu() {
   )
 }
 
-// ── Section content ───────────────────────────────────────────────────────────
-
-interface SectionBlockProps {
-  label: string
-  text: string | undefined
-  polished?: boolean
-}
-
-function SectionBlock({ label, text, polished = false }: SectionBlockProps) {
-  return (
-    <div>
-      <h2
-        className={cn(
-          'font-sans font-semibold text-ga-ink',
-          polished ? 'mb-4 text-xl leading-8' : 'mb-2 text-base leading-7'
-        )}
-      >
-        {label}
-      </h2>
-
-      {text ? (
-        polished ? (
-          /* Stage 1 FOH visual rhythm: larger scale, generous line-height, indented first line */
-          <p className="indent-8 font-sans text-base leading-8 tracking-wide text-ga-ink">{text}</p>
-        ) : (
-          <p className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-ga-ink">
-            {text}
-          </p>
-        )
-      ) : (
-        <p className={cn('font-sans italic text-ga-ink-muted', polished ? 'text-base' : 'text-sm')}>
-          Not yet written
-        </p>
-      )}
-    </div>
-  )
-}
-
 // ── SlideReview ───────────────────────────────────────────────────────────────
 
 export function SlideReview() {
@@ -244,12 +187,18 @@ export function SlideReview() {
 
   const wordCount = countWords(state.committed)
 
+  // Flatten committed paragraphs to plain text for ActionPlanDocument and buildMarkdown.
+  const committedText: Record<string, string | undefined> = {}
+  for (const [k, v] of Object.entries(state.committed)) {
+    committedText[k] = v?.text
+  }
+
   const handleTabSelect = (tab: Tab) => {
     dispatch({ type: 'SET_REVIEW_TAB', tab })
   }
 
   const handleCopyAll = async () => {
-    const markdown = buildMarkdown(state.committed)
+    const markdown = buildMarkdown(committedText)
     try {
       await navigator.clipboard.writeText(markdown)
       toast('Copied to clipboard', { variant: 'success' })
@@ -297,16 +246,8 @@ export function SlideReview() {
         aria-labelledby="review-tab-raw"
         data-testid="review-panel-raw"
         hidden={activeTab !== 'raw'}
-        className="flex flex-col gap-8"
       >
-        {SECTIONS.map(({ key, label }) => (
-          <SectionBlock
-            key={key}
-            label={label}
-            text={state.committed[key]?.text}
-            polished={false}
-          />
-        ))}
+        <ActionPlanDocument committed={committedText} polished={false} />
       </div>
 
       <div
@@ -314,11 +255,8 @@ export function SlideReview() {
         id="review-panel-polished"
         aria-labelledby="review-tab-polished"
         hidden={activeTab !== 'polished'}
-        className="flex flex-col gap-10"
       >
-        {SECTIONS.map(({ key, label }) => (
-          <SectionBlock key={key} label={label} text={state.committed[key]?.text} polished={true} />
-        ))}
+        <ActionPlanDocument committed={committedText} polished={true} />
       </div>
     </section>
   )

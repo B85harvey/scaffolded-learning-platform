@@ -13,6 +13,8 @@ import { SlideScaffold } from './slides/SlideScaffold'
 import { SlideReview } from './slides/SlideReview'
 import { ToastRegion, toast } from '@/components/ui/Toast'
 import { useBackgroundSync } from '@/hooks/useBackgroundSync'
+import { useLockSubscription } from '@/hooks/useLockSubscription'
+import { useScribeLabel } from '@/hooks/useScribeLabel'
 import { syncDirtyDrafts, updateProgress } from '@/lib/syncService'
 import { hydrateLesson, hydrateLessonFromDexie } from '@/lib/hydrateLesson'
 import { resolveResumeSlide } from '@/lib/resolveResumeSlide'
@@ -142,6 +144,7 @@ function LessonShellInner({
   studentId: string | null
 }) {
   const { state, dispatch } = useLesson()
+  const scribeLabel = useScribeLabel(lesson.id, studentId)
 
   // Derived values — safe to compute before hooks (not hooks themselves).
   const currentSlide = state.slides[state.currentSlideIndex]
@@ -244,6 +247,9 @@ function LessonShellInner({
   // ── Background sync ───────────────────────────────────────────────────────
   useBackgroundSync(studentId, lesson.id, true)
 
+  // ── Lock subscription — keep locks in sync via Realtime ──────────────────
+  useLockSubscription(lesson.id, dispatch, Boolean(studentId))
+
   // ── Progress tracking — fires after NEXT, BACK, GOTO, and HYDRATE ────────
   useEffect(() => {
     const slide = state.slides[state.currentSlideIndex]
@@ -341,7 +347,7 @@ function LessonShellInner({
           {/* Action Plan Panel — 360 px at lg, 300 px at md, hidden below */}
           <div className="hidden md:block md:w-[300px] lg:w-[360px]">
             <div className="sticky top-[88px] h-[calc(100vh-88px-64px)] overflow-y-auto">
-              <ActionPlanPanel scribe={lesson.scribe} />
+              <ActionPlanPanel scribeLabel={scribeLabel} />
             </div>
           </div>
         </div>

@@ -65,7 +65,7 @@ function renderScaffoldWithPanel(
   return render(
     <LessonProvider initialState={state}>
       <SlideScaffold slide={framedSlide} />
-      <ActionPlanPanel scribe="Alex Chen" />
+      <ActionPlanPanel scribeLabel="Alex Chen" />
     </LessonProvider>
   )
 }
@@ -330,7 +330,7 @@ function renderGuided(initialAnswers?: Record<string, SlideAnswers>) {
   return render(
     <LessonProvider initialState={state}>
       <SlideScaffold slide={guidedSlide} />
-      <ActionPlanPanel scribe="Alex Chen" />
+      <ActionPlanPanel scribeLabel="Alex Chen" />
     </LessonProvider>
   )
 }
@@ -461,7 +461,7 @@ function renderFreeform(
   return render(
     <LessonProvider initialState={state}>
       <SlideScaffold slide={freeformSlide} />
-      <ActionPlanPanel scribe="Alex Chen" />
+      <ActionPlanPanel scribeLabel="Alex Chen" />
     </LessonProvider>
   )
 }

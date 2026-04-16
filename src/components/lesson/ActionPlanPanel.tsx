@@ -47,10 +47,10 @@ function SectionBlock({ label, committed, onNavigate }: SectionBlockProps) {
 }
 
 interface ActionPlanPanelProps {
-  scribe: string
+  scribeLabel: string
 }
 
-export function ActionPlanPanel({ scribe }: ActionPlanPanelProps) {
+export function ActionPlanPanel({ scribeLabel }: ActionPlanPanelProps) {
   const { state, dispatch } = useLesson()
 
   const navigateToSection = (sectionKey: string) => {
@@ -68,7 +68,7 @@ export function ActionPlanPanel({ scribe }: ActionPlanPanelProps) {
       {/* Scribe chip */}
       <div className="mb-6 flex items-center gap-2 self-start rounded-full bg-ga-primary/10 px-3 py-1.5">
         <span className="h-2 w-2 rounded-full bg-ga-primary" aria-hidden="true" />
-        <span className="font-sans text-sm font-medium text-ga-primary">Scribe: {scribe}</span>
+        <span className="font-sans text-sm font-medium text-ga-primary">{scribeLabel}</span>
       </div>
 
       {/* Section blocks */}

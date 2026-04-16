@@ -119,7 +119,7 @@ describe('UnitView — complete lesson', () => {
 
     const link = screen.getByTestId('action-plan-link')
     expect(link).toBeInTheDocument()
-    expect(link).toHaveAttribute('href', expect.stringContaining('/lesson/kitchen-technologies'))
+    expect(link).toHaveAttribute('href', expect.stringContaining('/session/kitchen-technologies'))
   })
 })
 

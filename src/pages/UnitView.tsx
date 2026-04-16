@@ -16,9 +16,10 @@ interface LessonCardProps {
   lesson: LessonConfig
   progress: LessonStatusResult
   unitClosed: boolean
+  studentId: string | null
 }
 
-function LessonCard({ lesson, progress, unitClosed }: LessonCardProps) {
+function LessonCard({ lesson, progress, unitClosed, studentId }: LessonCardProps) {
   const { status, currentSlideIndex } = progress
   const totalSlides = lesson.slides.length
 
@@ -62,11 +63,11 @@ function LessonCard({ lesson, progress, unitClosed }: LessonCardProps) {
     if (status === 'complete') {
       return (
         <Link
-          to={`/lesson/${lesson.id}?review=1`}
+          to={`/session/${lesson.id}/${studentId ?? ''}`}
           data-testid="action-plan-link"
           className="mt-1 block text-xs font-medium text-ga-blue underline-offset-2 hover:underline"
         >
-          View Action Plan
+          View Summary
         </Link>
       )
     }
@@ -244,6 +245,7 @@ export function UnitView() {
                     lesson={lesson}
                     progress={progress}
                     unitClosed={unitClosed}
+                    studentId={studentId}
                   />
                 )
               })}

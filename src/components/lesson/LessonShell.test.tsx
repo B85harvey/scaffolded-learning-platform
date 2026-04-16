@@ -72,9 +72,10 @@ describe('LessonShell — initial render', () => {
     expect(placeholders).toHaveLength(6)
   })
 
-  it('renders the scribe chip', () => {
+  it('renders the scribe chip with "No group assigned" when no studentId is provided', () => {
     renderShell()
-    expect(screen.getByText(/Scribe:/)).toBeInTheDocument()
+    // No studentId → no group fetch → chip shows default
+    expect(screen.getByText('No group assigned')).toBeInTheDocument()
   })
 
   it('renders the save status chip', () => {

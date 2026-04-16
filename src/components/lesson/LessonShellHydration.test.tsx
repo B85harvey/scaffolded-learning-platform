@@ -39,14 +39,24 @@ vi.mock('@/lib/syncService', () => ({
   updateProgress: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
-    from: vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockResolvedValue({ data: [], error: null }),
-    }),
-  },
-}))
+vi.mock('@/lib/supabase', () => {
+  const channelMock = {
+    on: vi.fn().mockReturnThis(),
+    subscribe: vi.fn().mockReturnThis(),
+  }
+  return {
+    supabase: {
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+        in: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }),
+      channel: vi.fn().mockReturnValue(channelMock),
+      removeChannel: vi.fn().mockResolvedValue('ok'),
+    },
+  }
+})
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
