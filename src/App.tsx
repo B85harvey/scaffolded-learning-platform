@@ -15,6 +15,8 @@ import { LessonPage } from '@/pages/lesson/LessonPage'
 import { SessionSummary } from '@/pages/SessionSummary'
 import { ScaffoldPlayground } from '@/routes/_playground/scaffold'
 import { ConnectionBanner } from '@/components/ui/ConnectionBanner'
+import { TeacherLayout } from '@/components/teacher/TeacherLayout'
+import { TeacherLessonsPage } from '@/pages/teacher/TeacherLessonsPage'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 function App() {
@@ -96,6 +98,42 @@ function App() {
               <AdminRoute>
                 <AdminGroupForm />
               </AdminRoute>
+            }
+          />
+
+          {/* Teacher */}
+          <Route
+            path="/teacher/lessons"
+            element={
+              <TeacherLayout>
+                <TeacherLessonsPage />
+              </TeacherLayout>
+            }
+          />
+          <Route
+            path="/teacher/dashboard"
+            element={
+              <TeacherLayout>
+                <div className="p-8">
+                  <h1 className="font-sans text-2xl font-semibold text-ga-ink">Dashboard</h1>
+                  <p className="mt-2 font-sans text-sm text-ga-ink-muted">
+                    Teacher dashboard coming in Phase 5.
+                  </p>
+                </div>
+              </TeacherLayout>
+            }
+          />
+          <Route
+            path="/teacher/live-wall"
+            element={
+              <TeacherLayout>
+                <div className="p-8">
+                  <h1 className="font-sans text-2xl font-semibold text-ga-ink">Live Wall</h1>
+                  <p className="mt-2 font-sans text-sm text-ga-ink-muted">
+                    Live wall coming in Phase 5.
+                  </p>
+                </div>
+              </TeacherLayout>
             }
           />
 

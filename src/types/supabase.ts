@@ -267,6 +267,70 @@ export interface Database {
         Relationships: []
       }
 
+      // ── lessons ──────────────────────────────────────────────
+      lessons: {
+        Row: {
+          id: UUID
+          slug: string
+          unit_id: string | null
+          title: string
+          created_by: UUID | null
+          created_at: Timestamptz
+          updated_at: Timestamptz
+        }
+        Insert: {
+          id?: UUID
+          slug: string
+          unit_id?: string | null
+          title: string
+          created_by?: UUID | null
+          created_at?: Timestamptz
+          updated_at?: Timestamptz
+        }
+        Update: {
+          id?: UUID
+          slug?: string
+          unit_id?: string | null
+          title?: string
+          created_by?: UUID | null
+          created_at?: Timestamptz
+          updated_at?: Timestamptz
+        }
+        Relationships: []
+      }
+
+      // ── slides ────────────────────────────────────────────────
+      slides: {
+        Row: {
+          id: UUID
+          lesson_id: UUID
+          sort_order: number
+          type: 'content' | 'mcq' | 'scaffold' | 'review'
+          config: Json
+          created_at: Timestamptz
+          updated_at: Timestamptz
+        }
+        Insert: {
+          id?: UUID
+          lesson_id: UUID
+          sort_order: number
+          type: 'content' | 'mcq' | 'scaffold' | 'review'
+          config: Json
+          created_at?: Timestamptz
+          updated_at?: Timestamptz
+        }
+        Update: {
+          id?: UUID
+          lesson_id?: UUID
+          sort_order?: number
+          type?: 'content' | 'mcq' | 'scaffold' | 'review'
+          config?: Json
+          created_at?: Timestamptz
+          updated_at?: Timestamptz
+        }
+        Relationships: []
+      }
+
       // ── lesson_progress ──────────────────────────────────────
       lesson_progress: {
         Row: {
