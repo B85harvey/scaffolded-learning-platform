@@ -322,3 +322,57 @@ describe('LessonEditor — empty state', () => {
     })
   })
 })
+
+describe('LessonEditor — preview tab', () => {
+  it('shows Edit and Preview tabs when a slide is selected', async () => {
+    renderEditor()
+    await waitFor(() => screen.getByTestId('lesson-editor'))
+
+    expect(screen.getByTestId('tab-edit')).toBeInTheDocument()
+    expect(screen.getByTestId('tab-preview')).toBeInTheDocument()
+  })
+
+  it('clicking Preview tab shows slide-preview pane', async () => {
+    const user = userEvent.setup({ delay: null })
+    renderEditor()
+    await waitFor(() => screen.getByTestId('tab-preview'))
+
+    await user.click(screen.getByTestId('tab-preview'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('slide-preview')).toBeInTheDocument()
+    })
+  })
+
+  it('clicking Edit tab returns to editor', async () => {
+    const user = userEvent.setup({ delay: null })
+    renderEditor()
+    await waitFor(() => screen.getByTestId('tab-preview'))
+
+    await user.click(screen.getByTestId('tab-preview'))
+    await user.click(screen.getByTestId('tab-edit'))
+
+    await waitFor(() => {
+      // Content editor shows body textarea (slide 1 is content type)
+      expect(screen.getByDisplayValue('Body one')).toBeInTheDocument()
+    })
+  })
+})
+
+describe('LessonEditor — drag-and-drop reorder', () => {
+  it('renders drag handles for each slide', async () => {
+    renderEditor()
+    await waitFor(() => screen.getByTestId('lesson-editor'))
+
+    expect(screen.getByTestId('drag-handle-0')).toBeInTheDocument()
+    expect(screen.getByTestId('drag-handle-1')).toBeInTheDocument()
+    expect(screen.getByTestId('drag-handle-2')).toBeInTheDocument()
+  })
+
+  it('slide list is wrapped in a sortable context (data-testid slide-list exists)', async () => {
+    renderEditor()
+    await waitFor(() => screen.getByTestId('slide-list'))
+
+    expect(screen.getByTestId('slide-list')).toBeInTheDocument()
+  })
+})

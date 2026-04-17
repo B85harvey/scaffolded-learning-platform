@@ -1,8 +1,8 @@
 /**
  * LessonEditor — two-panel lesson editing page at /teacher/lessons/:lessonId/edit.
  *
- * Left panel (280px): slide list sidebar — type icon, label, slide number, delete.
- * Right panel (flex-1): slide-specific editor + save status chip in the header.
+ * Left panel (280px): sortable slide list sidebar with drag-and-drop reordering.
+ * Right panel (flex-1): Edit / Preview tabs + slide-specific editor.
  *
  * State design:
  * - `slides` array is the single source of truth for ordering and configs.
@@ -10,16 +10,37 @@
  * - `currentConfig` is derived: slides.find(id)?.config (no setState in effects).
  * - `useEditorAutoSave` watches currentConfig and debounces Supabase writes.
  * - Lesson title has its own debounced save (separate from slide config).
+ * - `activeTab` switches between 'edit' and 'preview' without clearing state.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Eye, FileText, HelpCircle, PenLine, Plus, Trash2 } from 'lucide-react'
+import { Eye, FileText, GripVertical, HelpCircle, PenLine, Plus, Trash2 } from 'lucide-react'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { TeacherLayout } from '@/components/teacher/TeacherLayout'
 import { EditorSaveChip } from '@/components/teacher/EditorSaveChip'
+import { SlidePreview } from '@/components/teacher/SlidePreview'
 import { ContentSlideEditor } from '@/components/teacher/editors/ContentSlideEditor'
 import type { ContentConfig } from '@/components/teacher/editors/ContentSlideEditor'
 import { McqSlideEditor } from '@/components/teacher/editors/McqSlideEditor'
 import type { McqConfig } from '@/components/teacher/editors/McqSlideEditor'
+import { ScaffoldSlideEditor } from '@/components/teacher/editors/ScaffoldSlideEditor'
+import type { ScaffoldSlideConfig } from '@/components/teacher/editors/ScaffoldSlideEditor'
 import { useEditorAutoSave } from '@/hooks/useEditorAutoSave'
 import { supabase } from '@/lib/supabase'
 import type { Json } from '@/types/supabase'
@@ -78,7 +99,13 @@ function defaultConfig(type: SlideType): Record<string, unknown> {
         ],
       }
     case 'scaffold':
-      return { id, type: 'scaffold', section: 'orientation', mode: 'guided', config: {} }
+      return {
+        id,
+        type: 'scaffold',
+        section: 'orientation',
+        mode: 'guided',
+        config: { prompts: [{ id: crypto.randomUUID(), text: '', hint: '' }] },
+      }
     case 'review':
       return { id, type: 'review', section: 'review' }
   }
@@ -98,7 +125,93 @@ function slideLabel(slide: EditorSlide): string {
     if (q) return q.slice(0, 40) + (q.length > 40 ? '…' : '')
     return 'Empty question'
   }
+  if (slide.type === 'scaffold') {
+    const inner = cfg.config as { targetQuestion?: string } | undefined
+    if (inner?.targetQuestion) return inner.targetQuestion.slice(0, 40)
+  }
   return typeLabel(slide.type)
+}
+
+// ── Sortable slide row ────────────────────────────────────────────────────────
+
+interface SortableSlideRowProps {
+  slide: EditorSlide
+  index: number
+  isSelected: boolean
+  onSelect: () => void
+  onDelete: () => void
+}
+
+function SortableSlideRow({ slide, index, isSelected, onSelect, onDelete }: SortableSlideRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: slide.id,
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group flex w-full items-center gap-1 pr-1 transition-colors ${
+        isSelected ? 'bg-ga-primary/8' : 'hover:bg-ga-surface-muted'
+      }`}
+    >
+      {/* Drag handle */}
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        aria-label={`Drag slide ${index + 1} to reorder`}
+        data-testid={`drag-handle-${index}`}
+        className="shrink-0 cursor-grab touch-none px-1 py-2 text-ga-ink-muted opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-none active:cursor-grabbing group-hover:opacity-100"
+      >
+        <GripVertical size={13} aria-hidden="true" />
+      </button>
+
+      {/* Slide row (select) */}
+      <button
+        type="button"
+        onClick={onSelect}
+        data-testid={`slide-row-${index}`}
+        aria-current={isSelected ? 'true' : undefined}
+        className={`flex min-w-0 flex-1 items-center gap-2 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ga-primary/50 ${
+          isSelected ? 'text-ga-primary' : 'text-ga-ink'
+        }`}
+      >
+        <span
+          className={`shrink-0 ${isSelected ? 'text-ga-primary' : 'text-ga-ink-muted'}`}
+          aria-label={typeLabel(slide.type)}
+        >
+          {typeIcon(slide.type)}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-sans text-xs font-medium">
+            {index + 1}. {slideLabel(slide)}
+          </span>
+          <span className="block font-sans text-xs text-ga-ink-muted">{typeLabel(slide.type)}</span>
+        </span>
+      </button>
+
+      {/* Delete */}
+      <button
+        type="button"
+        aria-label={`Delete slide ${index + 1}`}
+        onClick={(e) => {
+          e.stopPropagation()
+          onDelete()
+        }}
+        data-testid={`delete-slide-${index}`}
+        className="shrink-0 rounded-ga-sm p-1 text-ga-ink-muted opacity-0 transition-opacity hover:text-ga-danger focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/50 group-hover:opacity-100"
+      >
+        <Trash2 size={13} aria-hidden="true" />
+      </button>
+    </div>
+  )
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -115,6 +228,7 @@ export function LessonEditor() {
   const [addMenuOpen, setAddMenuOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<EditorSlide | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit')
   const addMenuRef = useRef<HTMLDivElement>(null)
 
   // ── Derived config (no setState in effects) ────────────────────────────────
@@ -212,6 +326,32 @@ export function LessonEditor() {
     [selectedSlideId]
   )
 
+  // ── Drag-and-drop slide reorder ────────────────────────────────────────────
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIdx = slides.findIndex((s) => s.id === active.id)
+    const newIdx = slides.findIndex((s) => s.id === over.id)
+    const reordered = arrayMove(slides, oldIdx, newIdx).map((s, i) => ({
+      ...s,
+      sort_order: i + 1,
+    }))
+    setSlides(reordered)
+
+    // Batch-update sort_order in Supabase
+    void Promise.all(
+      reordered.map((s) =>
+        supabase.from('slides').update({ sort_order: s.sort_order }).eq('id', s.id)
+      )
+    )
+  }
+
   // ── Add slide ──────────────────────────────────────────────────────────────
   async function handleAddSlide(type: SlideType) {
     if (!lessonId) return
@@ -258,7 +398,6 @@ export function LessonEditor() {
     const remaining = slides.filter((s) => s.id !== deleteTarget.id)
     setSlides(remaining)
 
-    // Select adjacent slide if the deleted one was selected
     if (selectedSlideId === deleteTarget.id) {
       setSelectedSlideId(remaining.length > 0 ? remaining[0].id : null)
     }
@@ -349,50 +488,30 @@ export function LessonEditor() {
                 </p>
               </div>
             ) : (
-              <ol aria-label="Slides" className="py-2">
-                {slides.map((slide, idx) => (
-                  <li key={slide.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedSlideId(slide.id)}
-                      data-testid={`slide-row-${idx}`}
-                      aria-current={slide.id === selectedSlideId ? 'true' : undefined}
-                      className={`group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-ga-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ga-primary/50 ${
-                        slide.id === selectedSlideId
-                          ? 'bg-ga-primary/8 text-ga-primary'
-                          : 'text-ga-ink'
-                      }`}
-                    >
-                      <span
-                        className={`shrink-0 ${slide.id === selectedSlideId ? 'text-ga-primary' : 'text-ga-ink-muted'}`}
-                        aria-label={typeLabel(slide.type)}
-                      >
-                        {typeIcon(slide.type)}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-sans text-xs font-medium">
-                          {idx + 1}. {slideLabel(slide)}
-                        </span>
-                        <span className="block font-sans text-xs text-ga-ink-muted">
-                          {typeLabel(slide.type)}
-                        </span>
-                      </span>
-                      <button
-                        type="button"
-                        aria-label={`Delete slide ${idx + 1}`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setDeleteTarget(slide)
-                        }}
-                        data-testid={`delete-slide-${idx}`}
-                        className="shrink-0 rounded-ga-sm p-1 text-ga-ink-muted opacity-0 transition-opacity hover:text-ga-danger focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/50 group-hover:opacity-100"
-                      >
-                        <Trash2 size={13} aria-hidden="true" />
-                      </button>
-                    </button>
-                  </li>
-                ))}
-              </ol>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={slides.map((s) => s.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <ol aria-label="Slides" className="py-2" data-testid="slide-list">
+                    {slides.map((slide, idx) => (
+                      <li key={slide.id}>
+                        <SortableSlideRow
+                          slide={slide}
+                          index={idx}
+                          isSelected={slide.id === selectedSlideId}
+                          onSelect={() => setSelectedSlideId(slide.id)}
+                          onDelete={() => setDeleteTarget(slide)}
+                        />
+                      </li>
+                    ))}
+                  </ol>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
 
@@ -443,7 +562,7 @@ export function LessonEditor() {
 
         {/* ── Editor panel ─────────────────────────────────────────────── */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Panel header: title + save chip */}
+          {/* Panel header: title + tabs + save chip */}
           <div className="flex h-12 shrink-0 items-center gap-4 border-b border-ga-border-subtle bg-ga-surface px-6">
             <input
               type="text"
@@ -454,6 +573,45 @@ export function LessonEditor() {
               placeholder="Untitled Lesson"
               data-testid="lesson-title-input"
             />
+
+            {/* Edit / Preview tabs (only when a slide is selected) */}
+            {currentSlide && (
+              <div
+                role="tablist"
+                aria-label="Editor tabs"
+                className="flex rounded-ga-sm border border-ga-border-subtle bg-ga-surface-muted"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'edit'}
+                  onClick={() => setActiveTab('edit')}
+                  data-testid="tab-edit"
+                  className={`rounded-l-ga-sm px-3 py-1 font-sans text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/50 ${
+                    activeTab === 'edit'
+                      ? 'bg-ga-surface font-medium text-ga-ink shadow-sm'
+                      : 'text-ga-ink-muted hover:text-ga-ink'
+                  }`}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'preview'}
+                  onClick={() => setActiveTab('preview')}
+                  data-testid="tab-preview"
+                  className={`rounded-r-ga-sm px-3 py-1 font-sans text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/50 ${
+                    activeTab === 'preview'
+                      ? 'bg-ga-surface font-medium text-ga-ink shadow-sm'
+                      : 'text-ga-ink-muted hover:text-ga-ink'
+                  }`}
+                >
+                  Preview
+                </button>
+              </div>
+            )}
+
             <EditorSaveChip status={saveStatus} />
             <button
               type="button"
@@ -464,7 +622,7 @@ export function LessonEditor() {
             </button>
           </div>
 
-          {/* Slide editor */}
+          {/* Slide editor / preview */}
           <div className="min-h-0 flex-1 overflow-hidden">
             {currentSlide === null ? (
               <div className="flex h-full items-center justify-center">
@@ -472,6 +630,12 @@ export function LessonEditor() {
                   Select a slide to start editing.
                 </p>
               </div>
+            ) : activeTab === 'preview' ? (
+              <SlidePreview
+                key={currentSlide.id}
+                slideType={currentSlide.type}
+                config={currentSlide.config}
+              />
             ) : currentSlide.type === 'content' ? (
               <ContentSlideEditor
                 key={currentSlide.id}
@@ -485,6 +649,14 @@ export function LessonEditor() {
               <McqSlideEditor
                 key={currentSlide.id}
                 config={currentSlide.config as unknown as McqConfig}
+                onConfigChange={(cfg) =>
+                  handleConfigChange(cfg as unknown as Record<string, unknown>)
+                }
+              />
+            ) : currentSlide.type === 'scaffold' ? (
+              <ScaffoldSlideEditor
+                key={currentSlide.id}
+                config={currentSlide.config as unknown as ScaffoldSlideConfig}
                 onConfigChange={(cfg) =>
                   handleConfigChange(cfg as unknown as Record<string, unknown>)
                 }
