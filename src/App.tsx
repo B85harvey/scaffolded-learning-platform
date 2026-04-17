@@ -20,6 +20,7 @@ import { TeacherLessonsPage } from '@/pages/teacher/TeacherLessonsPage'
 import { LessonEditor } from '@/pages/teacher/LessonEditor'
 import { NewLessonPage } from '@/pages/teacher/NewLessonPage'
 import { LiveWall } from '@/pages/teacher/LiveWall'
+import { TeacherDashboard } from '@/pages/teacher/TeacherDashboard'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 function App() {
@@ -116,6 +117,7 @@ function App() {
           <Route path="/teacher/lessons/new" element={<NewLessonPage />} />
           <Route path="/teacher/lessons/:lessonId/edit" element={<LessonEditor />} />
           <Route path="/teacher/livewall/:lessonId" element={<LiveWall />} />
+          <Route path="/teacher/dashboard/:lessonId" element={<TeacherDashboard />} />
           <Route
             path="/teacher/dashboard"
             element={
