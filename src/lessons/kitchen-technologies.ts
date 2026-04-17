@@ -436,9 +436,27 @@ List each source on a new line. Include: Author, Year, *Title*, Publisher, URL.
 Use the format: Author, A. A. (Year). *Title of work*. Publisher. https://url`,
     },
 
-    // ── Slide 17 ── Review ───────────────────────────────────────────────────
+    // ── Slide 17 ── Scaffold: References ────────────────────────────────────
     {
-      id: 'slide-17-review',
+      id: 'slide-17-references-scaffold',
+      type: 'scaffold',
+      section: 'references',
+      mode: 'freeform-table',
+      config: {
+        id: 'references',
+        targetQuestion: 'List your references in APA 7th edition format.',
+        mode: 'freeform-table',
+        sectionHeading: 'References',
+        template: {
+          columns: [{ id: 'reference', label: 'Reference', hint: 'Use APA 7th edition format.' }],
+          minRows: 1,
+        },
+      },
+    },
+
+    // ── Slide 18 ── Review ───────────────────────────────────────────────────
+    {
+      id: 'slide-18-review',
       type: 'review',
       section: 'review',
     },

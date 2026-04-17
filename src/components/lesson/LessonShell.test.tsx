@@ -60,9 +60,9 @@ describe('LessonShell — initial render', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders the slide counter "1 of 17"', () => {
+  it('renders the slide counter "1 of 18"', () => {
     renderShell()
-    expect(screen.getByText('1 of 17')).toBeInTheDocument()
+    expect(screen.getByText('1 of 18')).toBeInTheDocument()
   })
 
   it('renders the ActionPlanPanel with six "Not yet written" placeholders', () => {
@@ -173,7 +173,7 @@ describe('LessonShell — keyboard navigation', () => {
 
     await user.click(screen.getByRole('button', { name: 'Next slide' }))
 
-    expect(screen.getByText('2 of 17')).toBeInTheDocument()
+    expect(screen.getByText('2 of 18')).toBeInTheDocument()
   })
 
   it('slide 2 renders a content slide with its heading', async () => {
@@ -193,10 +193,10 @@ describe('LessonShell — keyboard navigation', () => {
     renderShell()
 
     await user.click(screen.getByRole('button', { name: 'Next slide' }))
-    expect(screen.getByText('2 of 17')).toBeInTheDocument()
+    expect(screen.getByText('2 of 18')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Previous slide' }))
-    expect(screen.getByText('1 of 17')).toBeInTheDocument()
+    expect(screen.getByText('1 of 18')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Welcome to the Action Plan lesson' })
     ).toBeInTheDocument()

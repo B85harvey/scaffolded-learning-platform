@@ -82,7 +82,7 @@ function renderUnitView(unitId = 'unit-2') {
 
 describe('UnitView — in_progress lesson', () => {
   it('shows "In progress" badge and slide X of Y counter', async () => {
-    // Slide index 6 (0-based) = Slide 7 of 17
+    // Slide index 6 (0-based) = Slide 7 of 18
     supabaseMock.tables['lesson_progress'] = [
       {
         lesson_id: 'kitchen-technologies',
@@ -97,7 +97,7 @@ describe('UnitView — in_progress lesson', () => {
       expect(screen.getByTestId('status-in-progress')).toBeInTheDocument()
     })
 
-    expect(screen.getByTestId('slide-progress')).toHaveTextContent('Slide 7 of 17')
+    expect(screen.getByTestId('slide-progress')).toHaveTextContent('Slide 7 of 18')
   })
 })
 

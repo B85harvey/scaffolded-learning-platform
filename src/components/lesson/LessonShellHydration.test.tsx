@@ -103,7 +103,7 @@ describe('LessonShell — loading skeleton', () => {
     )
 
     expect(screen.getByTestId('lesson-skeleton')).toBeInTheDocument()
-    expect(screen.queryByText('1 of 17')).not.toBeInTheDocument()
+    expect(screen.queryByText('1 of 18')).not.toBeInTheDocument()
   })
 
   it('hides the skeleton after hydration resolves', async () => {
@@ -152,8 +152,8 @@ describe('LessonShell — hydration resumes at correct slide', () => {
 
     await waitFor(() => expect(screen.queryByTestId('lesson-skeleton')).not.toBeInTheDocument())
 
-    // Slide counter should show slide 12 of 17
-    expect(screen.getByText('12 of 17')).toBeInTheDocument()
+    // Slide counter should show slide 12 of 18
+    expect(screen.getByText('12 of 18')).toBeInTheDocument()
   })
 })
 
@@ -210,6 +210,6 @@ describe('LessonShell — no skeleton when studentId is null', () => {
     )
 
     expect(screen.queryByTestId('lesson-skeleton')).not.toBeInTheDocument()
-    expect(screen.getByText('1 of 17')).toBeInTheDocument()
+    expect(screen.getByText('1 of 18')).toBeInTheDocument()
   })
 })

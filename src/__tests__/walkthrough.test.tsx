@@ -1,5 +1,5 @@
 /**
- * End-to-end keyboard walkthrough — full 17-slide Kitchen Technologies lesson.
+ * End-to-end keyboard walkthrough — full 18-slide Kitchen Technologies lesson.
  *
  * Uses userEvent.keyboard only (no mouse). Walks from cold load through every
  * slide to the Review slide and asserts key states at each step.
@@ -129,7 +129,7 @@ const IMPLEMENTATION_ROWS = [
 
 // ── Walkthrough ───────────────────────────────────────────────────────────────
 
-describe('Keyboard walkthrough — full 17-slide lesson', () => {
+describe('Keyboard walkthrough — full 18-slide lesson', () => {
   it('navigates keyboard-only from cold load to review and verifies word count', async () => {
     const user = userEvent.setup()
 
@@ -142,7 +142,7 @@ describe('Keyboard walkthrough — full 17-slide lesson', () => {
     )
 
     // ── Slide 1: Orientation content (index 0) ──────────────────────────────
-    expect(screen.getByText('1 of 17')).toBeInTheDocument()
+    expect(screen.getByText('1 of 18')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Welcome to the Action Plan lesson' })
     ).toBeInTheDocument()
@@ -150,14 +150,14 @@ describe('Keyboard walkthrough — full 17-slide lesson', () => {
     await user.keyboard('{ArrowRight}')
 
     // ── Slide 2: Rules content (index 1) ───────────────────────────────────
-    expect(screen.getByText('2 of 17')).toBeInTheDocument()
+    expect(screen.getByText('2 of 18')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Four rules for your Action Plan' })
     ).toBeInTheDocument()
     await user.keyboard('{ArrowRight}')
 
     // ── Slide 3: MCQ rule-check self (index 2) ─────────────────────────────
-    expect(screen.getByText('3 of 17')).toBeInTheDocument()
+    expect(screen.getByText('3 of 18')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Which sentence follows the Action Plan rules?' })
     ).toBeInTheDocument()
@@ -169,11 +169,11 @@ describe('Keyboard walkthrough — full 17-slide lesson', () => {
     await user.keyboard('{ArrowRight}')
 
     // ── Slide 4: Aim intro content (index 3) ───────────────────────────────
-    expect(screen.getByText('4 of 17')).toBeInTheDocument()
+    expect(screen.getByText('4 of 18')).toBeInTheDocument()
     await user.keyboard('{ArrowRight}')
 
     // ── Slide 5: Aim scaffold — framed (index 4) ───────────────────────────
-    expect(screen.getByText('5 of 17')).toBeInTheDocument()
+    expect(screen.getByText('5 of 18')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', { name: 'Write the Aim for your Action Plan.' })
     ).toBeInTheDocument()
@@ -192,18 +192,18 @@ describe('Keyboard walkthrough — full 17-slide lesson', () => {
     await tabToNextAndActivate(user)
 
     // ── Slide 6: Issues intro content (index 5) ───────────────────────────
-    expect(screen.getByText('6 of 17')).toBeInTheDocument()
+    expect(screen.getByText('6 of 18')).toBeInTheDocument()
     await user.keyboard('{ArrowRight}')
 
     // ── Slide 7: TEE check MCQ self (index 6) ─────────────────────────────
-    expect(screen.getByText('7 of 17')).toBeInTheDocument()
+    expect(screen.getByText('7 of 18')).toBeInTheDocument()
     // Option B is correct → '2'
     await user.keyboard('2')
     await user.keyboard('{Meta>}{Enter}{/Meta}')
     await user.keyboard('{ArrowRight}')
 
     // ── Slide 8: Issue 1 scaffold — framed (index 7) ──────────────────────
-    expect(screen.getByText('8 of 17')).toBeInTheDocument()
+    expect(screen.getByText('8 of 18')).toBeInTheDocument()
     for (let i = 0; i < ISSUE1_INPUTS.length; i++) {
       if (i > 0) await user.keyboard('{Tab}')
       await user.keyboard(ISSUE1_INPUTS[i])
@@ -212,7 +212,7 @@ describe('Keyboard walkthrough — full 17-slide lesson', () => {
     await tabToNextAndActivate(user)
 
     // ── Slide 9: Issue 2 scaffold — framed (index 8) ──────────────────────
-    expect(screen.getByText('9 of 17')).toBeInTheDocument()
+    expect(screen.getByText('9 of 18')).toBeInTheDocument()
     for (let i = 0; i < ISSUE2_INPUTS.length; i++) {
       if (i > 0) await user.keyboard('{Tab}')
       await user.keyboard(ISSUE2_INPUTS[i])
@@ -221,7 +221,7 @@ describe('Keyboard walkthrough — full 17-slide lesson', () => {
     await tabToNextAndActivate(user)
 
     // ── Slide 10: Issue 3 scaffold — framed (index 9) ─────────────────────
-    expect(screen.getByText('10 of 17')).toBeInTheDocument()
+    expect(screen.getByText('10 of 18')).toBeInTheDocument()
     for (let i = 0; i < ISSUE3_INPUTS.length; i++) {
       if (i > 0) await user.keyboard('{Tab}')
       await user.keyboard(ISSUE3_INPUTS[i])
@@ -230,17 +230,17 @@ describe('Keyboard walkthrough — full 17-slide lesson', () => {
     await tabToNextAndActivate(user)
 
     // ── Slide 11: Decision intro content (index 10) ───────────────────────
-    expect(screen.getByText('11 of 17')).toBeInTheDocument()
+    expect(screen.getByText('11 of 18')).toBeInTheDocument()
     await user.keyboard('{ArrowRight}')
 
     // ── Slide 12: Decision scaffold — guided (index 11) ───────────────────
-    expect(screen.getByText('12 of 17')).toBeInTheDocument()
+    expect(screen.getByText('12 of 18')).toBeInTheDocument()
     await user.keyboard(DECISION_INPUT)
     await user.keyboard('{Meta>}{Enter}{/Meta}')
     await tabToNextAndActivate(user)
 
     // ── Slide 13: Justification scaffold — guided (index 12) ──────────────
-    expect(screen.getByText('13 of 17')).toBeInTheDocument()
+    expect(screen.getByText('13 of 18')).toBeInTheDocument()
     for (let i = 0; i < JUSTIFICATION_INPUTS.length; i++) {
       if (i > 0) await user.keyboard('{Tab}')
       await user.keyboard(JUSTIFICATION_INPUTS[i])
@@ -249,11 +249,11 @@ describe('Keyboard walkthrough — full 17-slide lesson', () => {
     await tabToNextAndActivate(user)
 
     // ── Slide 14: Implementation intro content (index 13) ─────────────────
-    expect(screen.getByText('14 of 17')).toBeInTheDocument()
+    expect(screen.getByText('14 of 18')).toBeInTheDocument()
     await user.keyboard('{ArrowRight}')
 
     // ── Slide 15: Implementation scaffold — freeform-table (index 14) ──────
-    expect(screen.getByText('15 of 17')).toBeInTheDocument()
+    expect(screen.getByText('15 of 18')).toBeInTheDocument()
     // useFocusOnMount focuses first tabbable element = When 1 (auto-filled, read-only)
     // Tab to What 1, type, Tab to Why 1, type; then for each remaining row: Tab(When), Tab(What), type, Tab(Why), type
     for (let i = 0; i < IMPLEMENTATION_ROWS.length; i++) {
@@ -276,11 +276,22 @@ describe('Keyboard walkthrough — full 17-slide lesson', () => {
     await tabToNextAndActivate(user)
 
     // ── Slide 16: References content (index 15) ────────────────────────────
-    expect(screen.getByText('16 of 17')).toBeInTheDocument()
+    expect(screen.getByText('16 of 18')).toBeInTheDocument()
     await user.keyboard('{ArrowRight}')
 
-    // ── Slide 17: Review slide (index 16) ─────────────────────────────────
-    expect(screen.getByText('17 of 17')).toBeInTheDocument()
+    // ── Slide 17: References scaffold — freeform-table (index 16) ──────────
+    expect(screen.getByText('17 of 18')).toBeInTheDocument()
+    // On mount, focus is on the Type select (first tabbable in ReferenceBuilder).
+    // Tab past: Authors → Year → Title → Source → URL → Accessed → table textarea
+    for (let i = 0; i < 7; i++) {
+      await user.keyboard('{Tab}')
+    }
+    await user.keyboard('Smith, J. (2023). How to cook custard. Cooking Today. https://example.com')
+    await user.keyboard('{Meta>}{Enter}{/Meta}')
+    await tabToNextAndActivate(user)
+
+    // ── Slide 18: Review slide (index 17) ─────────────────────────────────
+    expect(screen.getByText('18 of 18')).toBeInTheDocument()
 
     // Assert 6 section headings are rendered in the Raw panel
     const rawPanel = screen.getByRole('tabpanel', { name: 'Raw' })
@@ -295,15 +306,15 @@ describe('Keyboard walkthrough — full 17-slide lesson', () => {
       'References',
     ])
 
-    // All committed sections are shown (not "Not yet written" except references)
-    expect(within(rawPanel).queryAllByText('Not yet written')).toHaveLength(1) // only references
+    // All committed sections are shown — references is now committed via the scaffold slide
+    expect(within(rawPanel).queryAllByText('Not yet written')).toHaveLength(0)
 
-    // Word count: the assembled paragraphs total ~383 words.
-    // Assert within 5% of 378 (range 359–397).
+    // Word count: the assembled paragraphs (including the references table) total ~395 words.
+    // Assert within 5% of 395 (range 375–415).
     const wordCountEl = screen.getByTestId('word-count')
     const countText = wordCountEl.textContent ?? '0 words'
     const count = parseInt(countText.match(/\d+/)?.[0] ?? '0', 10)
-    expect(count).toBeGreaterThanOrEqual(359)
-    expect(count).toBeLessThanOrEqual(397)
+    expect(count).toBeGreaterThanOrEqual(375)
+    expect(count).toBeLessThanOrEqual(415)
   }, 30_000) // Allow 30 s for this long test
 })

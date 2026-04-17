@@ -5,6 +5,7 @@ import { useLesson } from '@/contexts/LessonContext'
 import type { Warning } from '@/lib/scaffold'
 import type { SlideConfig } from '@/lessons/types'
 import { db } from '@/lib/dexieDb'
+import { ReferenceBuilder } from '@/components/scaffold/ReferenceBuilder'
 
 type ScaffoldSlide = Extract<SlideConfig, { type: 'scaffold' }>
 
@@ -135,6 +136,35 @@ export function FreeformTableMode({ slide, warnings, isCommitted }: FreeformTabl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ── Add reference row (fills first empty row, or appends) ────────────────
+
+  const handleAddReferenceRow = (citation: string) => {
+    if (cols.length === 0) return
+    const colId = cols[0].id
+    const rows = tableAnswers?.kind === 'table' ? tableAnswers.rows : []
+    const targetIdx = rows.findIndex((row) => !(row[colId] ?? '').trim())
+    if (targetIdx !== -1 && targetIdx < rowCount) {
+      dispatch({
+        type: 'SET_TABLE_ROW',
+        slideId: slide.id,
+        rowIndex: targetIdx,
+        columnId: colId,
+        value: citation,
+      })
+    } else {
+      const newRowIdx = rowCount
+      setRowCount((c) => c + 1)
+      setRowKeys((keys) => [...keys, crypto.randomUUID()])
+      dispatch({
+        type: 'SET_TABLE_ROW',
+        slideId: slide.id,
+        rowIndex: newRowIdx,
+        columnId: colId,
+        value: citation,
+      })
+    }
+  }
+
   // ── Add row ───────────────────────────────────────────────────────────────
 
   const handleAddRow = () => {
@@ -161,6 +191,11 @@ export function FreeformTableMode({ slide, warnings, isCommitted }: FreeformTabl
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Reference builder — shown only on references slides before commit */}
+      {slide.section === 'references' && !isCommitted && (
+        <ReferenceBuilder onAdd={handleAddReferenceRow} />
+      )}
+
       <div className="overflow-x-auto rounded-ga-md border border-ga-border-subtle">
         <table className="w-full border-collapse text-left">
           {/* Column header hints below the table, so we only list column names here */}

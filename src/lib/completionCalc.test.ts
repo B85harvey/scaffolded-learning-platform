@@ -61,11 +61,11 @@ describe('calcUnitCompletion — no submissions', () => {
   })
 })
 
-describe('calcUnitCompletion — 3 of 5 sections committed', () => {
-  it('returns 60 when aim, issues, and decision are committed', async () => {
-    // kitchen-technologies has 5 distinct scaffold sections:
-    // aim, issues, decision, justification, implementation.
-    // Committing 3 of them → 3/5 = 60.
+describe('calcUnitCompletion — 3 of 6 sections committed', () => {
+  it('returns 50 when aim, issues, and decision are committed', async () => {
+    // kitchen-technologies has 6 distinct scaffold sections:
+    // aim, issues, decision, justification, implementation, references.
+    // Committing 3 of them → 3/6 = 50.
     supabaseMock.tables['lesson_submissions'] = [
       { section: 'aim', committed_paragraph: 'Aim text.', lesson_id: 'kitchen-technologies' },
       { section: 'issues', committed_paragraph: 'Issues text.', lesson_id: 'kitchen-technologies' },
@@ -78,13 +78,13 @@ describe('calcUnitCompletion — 3 of 5 sections committed', () => {
       { section: 'aim', committed_paragraph: 'Another aim.', lesson_id: 'kitchen-technologies' },
     ]
     const result = await calcUnitCompletion('student-1', 'unit-2')
-    expect(result).toBe(60)
+    expect(result).toBe(50)
   })
 })
 
 describe('calcUnitCompletion — all sections committed', () => {
-  it('returns 100 when all 5 scaffold sections are committed', async () => {
-    const sections = ['aim', 'issues', 'decision', 'justification', 'implementation']
+  it('returns 100 when all 6 scaffold sections are committed', async () => {
+    const sections = ['aim', 'issues', 'decision', 'justification', 'implementation', 'references']
     supabaseMock.tables['lesson_submissions'] = sections.map((section) => ({
       section,
       committed_paragraph: `${section} paragraph.`,
@@ -102,8 +102,8 @@ describe('calcUnitCompletion — uncommitted rows ignored', () => {
       { section: 'issues', committed_paragraph: null, lesson_id: 'kitchen-technologies' },
     ]
     const result = await calcUnitCompletion('student-1', 'unit-2')
-    // Only 'aim' is committed → 1/5 = 20%
-    expect(result).toBe(20)
+    // Only 'aim' is committed → 1/6 = 17%
+    expect(result).toBe(17)
   })
 })
 
@@ -122,7 +122,7 @@ describe('calcLessonStatus — in_progress at slide 7', () => {
       {
         lesson_id: 'kitchen-technologies',
         status: 'in_progress',
-        current_slide_index: 6, // 0-based → slide 7 of 17
+        current_slide_index: 6, // 0-based → slide 7 of 18
       },
     ]
     const result = await calcLessonStatus('student-1', 'kitchen-technologies')

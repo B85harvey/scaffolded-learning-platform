@@ -120,12 +120,12 @@ describe('DevToolbar — slide jumper', () => {
     expect(screen.getByRole('combobox', { name: 'Jump to slide' })).toBeInTheDocument()
   })
 
-  it('slide jumper has all 17 slides as options', async () => {
+  it('slide jumper has all 18 slides as options', async () => {
     const user = userEvent.setup()
     renderToolbar()
     await user.click(screen.getByRole('button', { name: 'Expand dev toolbar' }))
     const select = screen.getByRole('combobox', { name: 'Jump to slide' })
-    expect(select.querySelectorAll('option')).toHaveLength(17)
+    expect(select.querySelectorAll('option')).toHaveLength(18)
   })
 
   it('selecting a slide dispatches GOTO', async () => {

@@ -536,6 +536,78 @@ describe('SlideScaffold — freeform-table mode', () => {
   })
 })
 
+// ── ReferenceBuilder integration ─────────────────────────────────────────────
+
+const referencesSlide: Extract<SlideConfig, { type: 'scaffold' }> = {
+  id: 'slide-17-references-scaffold',
+  type: 'scaffold',
+  section: 'references',
+  mode: 'freeform-table',
+  config: {
+    id: 'references',
+    targetQuestion: 'List your references in APA 7th edition format.',
+    mode: 'freeform-table',
+    sectionHeading: 'References',
+    template: {
+      columns: [{ id: 'reference', label: 'Reference', hint: 'Use APA 7th edition format.' }],
+      minRows: 1,
+    },
+  },
+}
+
+function renderReferences(committedSlideIds?: string[]) {
+  const allSlidesRefs = [referencesSlide] as SlideConfig[]
+  const baseState = makeLessonState('test-lesson', allSlidesRefs)
+  const state = {
+    ...baseState,
+    ...(committedSlideIds ? { committedSlideIds } : {}),
+  }
+  return render(
+    <LessonProvider initialState={state}>
+      <SlideScaffold slide={referencesSlide} />
+      <ActionPlanPanel scribeLabel="Alex Chen" />
+    </LessonProvider>
+  )
+}
+
+describe('SlideScaffold — ReferenceBuilder integration', () => {
+  it('renders the ReferenceBuilder above the table for references slides', () => {
+    renderReferences()
+    expect(screen.getByTestId('reference-builder')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Reference' })).toBeInTheDocument()
+  })
+
+  it('Add Reference inserts a citation as a table row', async () => {
+    const user = userEvent.setup()
+    renderReferences()
+
+    await user.type(screen.getByLabelText('Author(s)'), 'Smith, J.')
+    await user.type(screen.getByLabelText('Year'), '2023')
+    await user.type(screen.getByLabelText('Title'), 'How to cook custard')
+    await user.click(screen.getByTestId('add-reference-btn'))
+
+    // The citation should appear as the value in the first table row textarea
+    const textarea = screen.getByLabelText('Row 1: Reference')
+    expect((textarea as HTMLTextAreaElement).value).toContain('Smith, J.')
+    expect((textarea as HTMLTextAreaElement).value).toContain('2023')
+  })
+
+  it('manual entry in the table row also works', async () => {
+    const user = userEvent.setup()
+    renderReferences()
+
+    const textarea = screen.getByLabelText('Row 1: Reference')
+    await user.type(textarea, 'Jones, A. (2021). Food Science. Publisher.')
+
+    expect((textarea as HTMLTextAreaElement).value).toContain('Jones, A.')
+  })
+
+  it('does not render ReferenceBuilder after commit', () => {
+    renderReferences([referencesSlide.id])
+    expect(screen.queryByTestId('reference-builder')).not.toBeInTheDocument()
+  })
+})
+
 // ── Engine adapter tests ──────────────────────────────────────────────────────
 
 describe('engineAdapter — buildEngineAnswers', () => {
