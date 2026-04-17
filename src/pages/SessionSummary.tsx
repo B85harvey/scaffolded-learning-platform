@@ -10,6 +10,10 @@ import { getLessonById } from '@/lessons'
 import { ActionPlanDocument, buildMarkdown } from '@/components/lesson/ActionPlanDocument'
 import { toast, ToastRegion } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
+import { UNITS } from '@/lessons/units'
+import { generateUnitReviewDocx } from '@/utils/generateUnitReviewDocx'
+import { triggerDocxDownload } from '@/utils/triggerDownload'
+import type { UnitReviewLesson, UnitReviewSection } from '@/utils/generateUnitReviewDocx'
 
 // ── SessionSummary ────────────────────────────────────────────────────────────
 
@@ -18,19 +22,21 @@ export function SessionSummary() {
     lessonId: string
     studentId: string
   }>()
-  const { session, loading: authLoading } = useAuth()
+  const { session, profile, loading: authLoading } = useAuth()
 
   const [committed, setCommitted] = useState<Record<string, string | undefined>>({})
   const [studentName, setStudentName] = useState('')
   const [completionDate, setCompletionDate] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [unitReviewDownloading, setUnitReviewDownloading] = useState(false)
 
   const lesson = lessonId ? getLessonById(lessonId) : undefined
   const isOwn = !authLoading && session?.user.id === paramStudentId
+  const isTeacher = profile?.role === 'teacher'
 
   useEffect(() => {
-    if (!isOwn || !lessonId || !paramStudentId) {
+    if ((!isOwn && !isTeacher) || !lessonId || !paramStudentId) {
       setLoading(false)
       return
     }
@@ -81,11 +87,107 @@ export function SessionSummary() {
     }
 
     void load()
-  }, [isOwn, lessonId, paramStudentId])
+  }, [isOwn, isTeacher, lessonId, paramStudentId])
 
   // ── Auth guard ─────────────────────────────────────────────────────────────
-  if (!authLoading && !isOwn) {
+  if (!authLoading && !isOwn && !isTeacher) {
     return <Navigate to="/home" replace />
+  }
+
+  // ── Unit Review download (teacher only) ────────────────────────────────────
+  const handleUnitReviewDownload = async () => {
+    if (!lessonId || !paramStudentId || unitReviewDownloading) return
+    setUnitReviewDownloading(true)
+
+    try {
+      const unit = UNITS.find((u) => u.lessonIds.includes(lessonId))
+      if (!unit || unit.lessonIds.length === 0) return
+
+      const { data: lessonRecords } = await supabase
+        .from('lessons')
+        .select('id, title, slug')
+        .in('slug', unit.lessonIds)
+
+      const dbLessons = (lessonRecords ?? []) as Array<{
+        id: string
+        title: string
+        slug: string
+      }>
+
+      const unitLessons: UnitReviewLesson[] = await Promise.all(
+        unit.lessonIds.map(async (slug) => {
+          const dbLesson = dbLessons.find((l) => l.slug === slug)
+          if (!dbLesson) return { lessonTitle: slug, sections: [] }
+
+          const { data: slideData } = await supabase
+            .from('slides')
+            .select('id, sort_order, type, config')
+            .eq('lesson_id', dbLesson.id)
+            .eq('type', 'scaffold')
+            .order('sort_order')
+
+          type DbSlide = {
+            id: string
+            sort_order: number
+            type: string
+            config: {
+              section?: string
+              config?: { targetQuestion?: string; sectionHeading?: string }
+            }
+          }
+
+          const scaffoldSlides = (slideData ?? []) as DbSlide[]
+          if (scaffoldSlides.length === 0) {
+            return { lessonTitle: dbLesson.title, sections: [] }
+          }
+
+          const slideIds = scaffoldSlides.map((s) => s.id)
+          const { data: subData } = await supabase
+            .from('lesson_submissions')
+            .select('slide_id, committed_paragraph')
+            .eq('student_id', paramStudentId!)
+            .eq('lesson_id', dbLesson.id)
+            .in('slide_id', slideIds)
+
+          const submissionMap: Record<string, string> = {}
+          for (const sub of (subData ?? []) as Array<{
+            slide_id: string
+            committed_paragraph: string | null
+          }>) {
+            submissionMap[sub.slide_id] = sub.committed_paragraph ?? ''
+          }
+
+          const sections: UnitReviewSection[] = scaffoldSlides.map((slide) => {
+            const section = slide.config.section ?? ''
+            const targetQ =
+              slide.config.config?.targetQuestion ?? slide.config.config?.sectionHeading ?? ''
+            const heading = targetQ ? `${section}: ${targetQ}` : section
+            const raw = submissionMap[slide.id]
+            return { heading, content: raw != null && raw !== '' ? raw : null }
+          })
+
+          return { lessonTitle: dbLesson.title, sections }
+        })
+      )
+
+      const today = new Date().toLocaleDateString('en-AU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+      const blob = await generateUnitReviewDocx({
+        unitTitle: unit.title,
+        studentName,
+        date: today,
+        lessons: unitLessons,
+      })
+
+      const safeUnit = unit.title.replace(/[/\\?%*:|"<>]/g, '-')
+      const safeName = studentName.replace(/[/\\?%*:|"<>]/g, '-')
+      triggerDocxDownload(blob, `${safeUnit} - ${safeName} - Unit Review.docx`)
+    } finally {
+      setUnitReviewDownloading(false)
+    }
   }
 
   // ── Copy All ───────────────────────────────────────────────────────────────
@@ -147,8 +249,23 @@ export function SessionSummary() {
 
           {!loading && !error && (
             <>
-              {/* Copy All */}
-              <div className="mb-6 flex justify-end">
+              {/* Action toolbar */}
+              <div className="mb-6 flex items-center justify-end gap-3">
+                {isTeacher && (
+                  <button
+                    type="button"
+                    data-testid="unit-review-download-btn"
+                    disabled={unitReviewDownloading}
+                    onClick={() => void handleUnitReviewDownload()}
+                    className={cn(
+                      'rounded-ga-sm border border-ga-border-strong px-4 py-2 font-sans text-sm font-medium text-ga-text',
+                      'transition-colors hover:border-ga-primary hover:text-ga-primary disabled:opacity-50',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2'
+                    )}
+                  >
+                    {unitReviewDownloading ? 'Downloading…' : 'Download Unit Review'}
+                  </button>
+                )}
                 <button
                   type="button"
                   aria-label="Copy all"

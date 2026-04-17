@@ -25,10 +25,20 @@ vi.mock('@/utils/triggerDownload', () => ({
   triggerDocxDownload: vi.fn(),
 }))
 
+vi.mock('@/utils/generateUnitReviewDocx', () => ({
+  generateUnitReviewDocx: vi.fn().mockResolvedValue(
+    new Blob(['docx'], {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    })
+  ),
+}))
+
 const { generateLessonCsv } = await import('@/utils/generateLessonCsv')
 const { triggerDocxDownload } = await import('@/utils/triggerDownload')
+const { generateUnitReviewDocx } = await import('@/utils/generateUnitReviewDocx')
 const mockGenerateLessonCsv = vi.mocked(generateLessonCsv)
 const mockTriggerDocxDownload = vi.mocked(triggerDocxDownload)
+const mockGenerateUnitReviewDocx = vi.mocked(generateUnitReviewDocx)
 
 // ── Auth mock ─────────────────────────────────────────────────────────────────
 
@@ -156,20 +166,43 @@ const DB_SUBMISSIONS = [
 
 const mockScaffoldSubmissionsNotFn = vi.fn()
 const mockProfilesInFn = vi.fn()
+const mockLessonsInFn = vi.fn()
+const mockUnitReviewSubmissionInFn = vi.fn()
+
+const DB_UNIT_REVIEW_SUBMISSIONS = [
+  {
+    slide_id: 'scaffold-slide-1',
+    committed_paragraph: 'The aim is to investigate kitchen technologies.',
+  },
+]
+
+const DB_UNIT_REVIEW_LESSONS = [
+  { id: LESSON_ID, title: 'Kitchen Technologies', slug: 'kitchen-technologies' },
+]
 
 function setupFromMock(overrides: { submissions?: typeof DB_SUBMISSIONS } = {}) {
   const submissions = overrides.submissions ?? DB_SUBMISSIONS
 
-  // Reset CSV-path mocks to defaults
+  // Reset CSV/unit-review-path mocks to defaults
   mockScaffoldSubmissionsNotFn.mockResolvedValue({ data: DB_SCAFFOLD_SUBMISSIONS, error: null })
   mockProfilesInFn.mockResolvedValue({ data: DB_PROFILES, error: null })
+  mockLessonsInFn.mockResolvedValue({ data: DB_UNIT_REVIEW_LESSONS, error: null })
+  mockUnitReviewSubmissionInFn.mockResolvedValue({
+    data: DB_UNIT_REVIEW_SUBMISSIONS,
+    error: null,
+  })
 
   mockFrom.mockImplementation((table: string) => {
     if (table === 'slides') {
+      // Scaffold-only query (unit review download): .eq(lesson_id).eq('type', 'scaffold').order(...)
+      const scaffoldOrderFn = vi.fn().mockResolvedValue({ data: [SCAFFOLD_SLIDE], error: null })
+      // All-slides query (initial load): .eq(lesson_id).order(...)
+      const allSlidesOrderFn = vi.fn().mockResolvedValue({ data: DB_SLIDES, error: null })
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({ data: DB_SLIDES, error: null }),
+            order: allSlidesOrderFn,
+            eq: vi.fn().mockReturnValue({ order: scaffoldOrderFn }),
           }),
         }),
       } as never
@@ -178,21 +211,34 @@ function setupFromMock(overrides: { submissions?: typeof DB_SUBMISSIONS } = {}) 
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            maybeSingle: vi
-              .fn()
-              .mockResolvedValue({ data: { title: 'Kitchen Technologies' }, error: null }),
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { title: 'Kitchen Technologies', slug: 'kitchen-technologies' },
+              error: null,
+            }),
           }),
+          in: mockLessonsInFn,
         }),
       } as never
     }
     if (table === 'lesson_submissions') {
       return {
         select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            // MCQ submissions query: .eq(lessonId).eq(slideId)
-            eq: vi.fn().mockResolvedValue({ data: submissions, error: null }),
-            // CSV scaffold query: .eq(lessonId).not(...)
-            not: mockScaffoldSubmissionsNotFn,
+          eq: vi.fn().mockImplementation((col: string) => {
+            if (col === 'student_id') {
+              // Unit review download path: .eq('student_id').eq('lesson_id').in('slide_id', ...)
+              return {
+                eq: vi.fn().mockReturnValue({
+                  in: mockUnitReviewSubmissionInFn,
+                }),
+              }
+            }
+            // lesson_id path (MCQ, CSV, initial student load)
+            return {
+              // MCQ: .eq(lessonId).eq(slideId)
+              eq: vi.fn().mockResolvedValue({ data: submissions, error: null }),
+              // CSV + initial load: .eq(lessonId).not('section', ...)
+              not: mockScaffoldSubmissionsNotFn,
+            }
           }),
         }),
       } as never
@@ -231,6 +277,12 @@ beforeEach(() => {
   // Restore CSV utility mock defaults after clearAllMocks
   mockGenerateLessonCsv.mockReturnValue(
     '"Student Name","Aim: Statement of intent"\n"Alex","The aim."'
+  )
+  // Restore unit-review docx mock default after clearAllMocks
+  mockGenerateUnitReviewDocx.mockResolvedValue(
+    new Blob(['docx'], {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    })
   )
 
   channelMock.on.mockImplementation((_e: string, _f: unknown, cb: (p: unknown) => void) => {
@@ -290,9 +342,20 @@ describe('TeacherDashboard — page structure', () => {
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              maybeSingle: vi
-                .fn()
-                .mockResolvedValue({ data: { title: 'Kitchen Technologies' }, error: null }),
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { title: 'Kitchen Technologies', slug: 'kitchen-technologies' },
+                error: null,
+              }),
+            }),
+            in: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        } as never
+      }
+      if (table === 'lesson_submissions') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              not: vi.fn().mockResolvedValue({ data: [], error: null }),
             }),
           }),
         } as never
@@ -509,5 +572,48 @@ describe('TeacherDashboard — Download .csv', () => {
     const [blob, filename] = mockTriggerDocxDownload.mock.calls[0]
     expect((blob as Blob).type).toBe('text/csv')
     expect(filename).toBe('Kitchen Technologies - Class Responses.csv')
+  })
+})
+
+// ── Tests — Unit Review download ──────────────────────────────────────────────
+
+describe('TeacherDashboard — Unit Review download', () => {
+  it('renders a "Download Unit Review" button for each student', async () => {
+    renderDashboard()
+    await waitFor(() => screen.getByTestId('unit-review-btn-student-1'))
+    expect(screen.getByTestId('unit-review-btn-student-1')).toBeInTheDocument()
+    expect(screen.getByTestId('unit-review-btn-student-2')).toBeInTheDocument()
+  })
+
+  it('clicking "Download Unit Review" calls generateUnitReviewDocx with correct data', async () => {
+    const user = userEvent.setup()
+    renderDashboard()
+    await waitFor(() => screen.getByTestId('unit-review-btn-student-1'))
+
+    await user.click(screen.getByTestId('unit-review-btn-student-1'))
+
+    await waitFor(() => expect(mockGenerateUnitReviewDocx).toHaveBeenCalledOnce())
+
+    const call = mockGenerateUnitReviewDocx.mock.calls[0][0]
+    expect(call.unitTitle).toBe('Unit 2: Food and Hospitality')
+    expect(call.studentName).toBe('Alex Smith')
+    expect(call.lessons).toHaveLength(1)
+    expect(call.lessons[0].lessonTitle).toBe('Kitchen Technologies')
+  })
+
+  it('clicking "Download Unit Review" calls triggerDocxDownload with correct filename', async () => {
+    const user = userEvent.setup()
+    renderDashboard()
+    await waitFor(() => screen.getByTestId('unit-review-btn-student-1'))
+
+    await user.click(screen.getByTestId('unit-review-btn-student-1'))
+
+    await waitFor(() => expect(mockTriggerDocxDownload).toHaveBeenCalledOnce())
+
+    const [blob, filename] = mockTriggerDocxDownload.mock.calls[0]
+    expect((blob as Blob).type).toBe(
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+    expect(filename).toBe('Unit 2- Food and Hospitality - Alex Smith - Unit Review.docx')
   })
 })

@@ -17,8 +17,11 @@ import { McqBarChart } from '@/components/teacher/McqBarChart'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { generateLessonCsv } from '@/utils/generateLessonCsv'
+import { generateUnitReviewDocx } from '@/utils/generateUnitReviewDocx'
 import { triggerDocxDownload } from '@/utils/triggerDownload'
+import { UNITS } from '@/lessons/units'
 import type { CsvColumn, CsvStudent } from '@/utils/generateLessonCsv'
+import type { UnitReviewLesson, UnitReviewSection } from '@/utils/generateUnitReviewDocx'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -66,13 +69,16 @@ function TeacherDashboardInner() {
   const { lessonId } = useParams<{ lessonId: string }>()
 
   const [lessonTitle, setLessonTitle] = useState<string>('')
+  const [lessonSlug, setLessonSlug] = useState<string>('')
   const [slides, setSlides] = useState<DashboardSlide[]>([])
   const [scaffoldColumns, setScaffoldColumns] = useState<ScaffoldColumn[]>([])
+  const [students, setStudents] = useState<{ id: string; name: string }[]>([])
   const [selectedSlide, setSelectedSlide] = useState<DashboardSlide | null>(null)
   const [submissions, setSubmissions] = useState<McqSubmission[]>([])
   const [isRevealed, setIsRevealed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [csvDownloading, setCsvDownloading] = useState(false)
+  const [unitReviewDownloading, setUnitReviewDownloading] = useState<string | null>(null)
 
   const mountedRef = useRef(true)
   useEffect(() => {
@@ -90,13 +96,18 @@ function TeacherDashboardInner() {
     let cancelled = false
 
     async function loadSlides() {
-      const [slidesResult, lessonResult] = await Promise.all([
+      const [slidesResult, lessonResult, studentSubsResult] = await Promise.all([
         supabase
           .from('slides')
           .select('id, sort_order, type, config')
           .eq('lesson_id', lessonId!)
           .order('sort_order'),
-        supabase.from('lessons').select('title').eq('id', lessonId!).maybeSingle(),
+        supabase.from('lessons').select('title, slug').eq('id', lessonId!).maybeSingle(),
+        supabase
+          .from('lesson_submissions')
+          .select('student_id')
+          .eq('lesson_id', lessonId!)
+          .not('section', 'is', null),
       ])
 
       if (cancelled) return
@@ -132,10 +143,32 @@ function TeacherDashboardInner() {
           return { slideId: s.id, label }
         })
 
+      // Load students from scaffold submissions
+      const studentIds = [
+        ...new Set(
+          ((studentSubsResult.data ?? []) as Array<{ student_id: string | null }>)
+            .map((r) => r.student_id)
+            .filter((id): id is string => id !== null)
+        ),
+      ]
+
+      let loadedStudents: { id: string; name: string }[] = []
+      if (studentIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+          .in('id', studentIds)
+        loadedStudents = (
+          (profilesData ?? []) as Array<{ id: string; display_name: string | null }>
+        ).map((p) => ({ id: p.id, name: p.display_name ?? p.id }))
+      }
+
       if (!cancelled) {
         setLessonTitle(lessonResult.data?.title ?? '')
+        setLessonSlug((lessonResult.data as { title: string; slug?: string } | null)?.slug ?? '')
         setSlides(mcqSlides)
         setScaffoldColumns(scaffoldCols)
+        setStudents(loadedStudents)
         setSelectedSlide(mcqSlides[0] ?? null)
         setLoading(false)
       }
@@ -342,6 +375,101 @@ function TeacherDashboardInner() {
     }
   }, [lessonId, lessonTitle, scaffoldColumns, csvDownloading])
 
+  const handleUnitReviewDownload = useCallback(
+    async (studentId: string, studentName: string) => {
+      if (!lessonSlug || unitReviewDownloading) return
+
+      setUnitReviewDownloading(studentId)
+
+      try {
+        // 1. Find the unit containing this lesson
+        const unit = UNITS.find((u) => u.lessonIds.includes(lessonSlug))
+        if (!unit || unit.lessonIds.length === 0) return
+
+        // 2. Fetch all lesson records for the unit
+        const { data: lessonRecords } = await supabase
+          .from('lessons')
+          .select('id, title, slug')
+          .in('slug', unit.lessonIds)
+
+        const dbLessons = (lessonRecords ?? []) as Array<{
+          id: string
+          title: string
+          slug: string
+        }>
+
+        // 3. For each lesson (in unit order), fetch scaffold slides + student submissions
+        const unitLessons: UnitReviewLesson[] = await Promise.all(
+          unit.lessonIds.map(async (slug) => {
+            const dbLesson = dbLessons.find((l) => l.slug === slug)
+            if (!dbLesson) return { lessonTitle: slug, sections: [] }
+
+            // Scaffold slides for this lesson
+            const { data: slideData } = await supabase
+              .from('slides')
+              .select('id, sort_order, type, config')
+              .eq('lesson_id', dbLesson.id)
+              .eq('type', 'scaffold')
+              .order('sort_order')
+
+            const scaffoldSlides = (slideData ?? []) as DbSlide[]
+            if (scaffoldSlides.length === 0) {
+              return { lessonTitle: dbLesson.title, sections: [] }
+            }
+
+            // Student's submissions for those slides
+            const slideIds = scaffoldSlides.map((s) => s.id)
+            const { data: subData } = await supabase
+              .from('lesson_submissions')
+              .select('slide_id, committed_paragraph')
+              .eq('student_id', studentId)
+              .eq('lesson_id', dbLesson.id)
+              .in('slide_id', slideIds)
+
+            const submissionMap: Record<string, string> = {}
+            for (const sub of (subData ?? []) as Array<{
+              slide_id: string
+              committed_paragraph: string | null
+            }>) {
+              submissionMap[sub.slide_id] = sub.committed_paragraph ?? ''
+            }
+
+            const sections: UnitReviewSection[] = scaffoldSlides.map((slide) => {
+              const section = slide.config.section ?? ''
+              const targetQ =
+                slide.config.config?.targetQuestion ?? slide.config.config?.sectionHeading ?? ''
+              const heading = targetQ ? `${section}: ${targetQ}` : section
+              const raw = submissionMap[slide.id]
+              return { heading, content: raw != null && raw !== '' ? raw : null }
+            })
+
+            return { lessonTitle: dbLesson.title, sections }
+          })
+        )
+
+        // 4. Generate and download
+        const today = new Date().toLocaleDateString('en-AU', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+        const blob = await generateUnitReviewDocx({
+          unitTitle: unit.title,
+          studentName,
+          date: today,
+          lessons: unitLessons,
+        })
+
+        const safeUnit = unit.title.replace(/[/\\?%*:|"<>]/g, '-')
+        const safeName = studentName.replace(/[/\\?%*:|"<>]/g, '-')
+        triggerDocxDownload(blob, `${safeUnit} - ${safeName} - Unit Review.docx`)
+      } finally {
+        setUnitReviewDownloading(null)
+      }
+    },
+    [lessonSlug, unitReviewDownloading]
+  )
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -454,6 +582,33 @@ function TeacherDashboardInner() {
             </div>
           )}
         </>
+      )}
+
+      {/* Student Unit Review Downloads */}
+      {students.length > 0 && (
+        <div data-testid="student-unit-review-list" className="mt-10">
+          <h2 className="mb-4 font-sans text-lg font-semibold text-ga-ink">Student Unit Reviews</h2>
+          <ul className="space-y-2">
+            {students.map((student) => (
+              <li key={student.id} className="flex items-center justify-between gap-4">
+                <span className="font-sans text-sm text-ga-ink">{student.name}</span>
+                <button
+                  type="button"
+                  data-testid={`unit-review-btn-${student.id}`}
+                  disabled={unitReviewDownloading === student.id}
+                  onClick={() => void handleUnitReviewDownload(student.id, student.name)}
+                  className={cn(
+                    'rounded-ga-sm border border-ga-border-strong px-3 py-1.5 font-sans text-xs font-medium text-ga-ink',
+                    'transition-colors hover:border-ga-primary hover:text-ga-primary disabled:opacity-50',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/40 focus-visible:ring-offset-2'
+                  )}
+                >
+                  {unitReviewDownloading === student.id ? 'Downloading…' : 'Download Unit Review'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   )
