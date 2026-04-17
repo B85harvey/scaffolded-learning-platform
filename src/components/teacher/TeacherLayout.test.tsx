@@ -55,7 +55,7 @@ describe('TeacherLayout — teacher user', () => {
     renderLayout()
 
     expect(screen.getByRole('navigation', { name: 'Teacher navigation' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Lessons' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'My Lessons' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Live Wall' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Class' })).toBeInTheDocument()

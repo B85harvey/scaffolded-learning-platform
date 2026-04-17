@@ -23,7 +23,7 @@ export function TeacherNav() {
           to="/teacher/lessons"
           className="rounded-sm text-sm font-medium text-ga-text hover:text-ga-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
         >
-          Lessons
+          My Lessons
         </Link>
         <Link
           to="/teacher/dashboard"
