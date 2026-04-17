@@ -256,6 +256,17 @@ describe('a11y-phase4 — TeacherDashboard with McqBarChart visible', () => {
           }),
         } as never
       }
+      if (table === 'lessons') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi
+                .fn()
+                .mockResolvedValue({ data: { title: 'Kitchen Technologies' }, error: null }),
+            }),
+          }),
+        } as never
+      }
       if (table === 'lesson_submissions') {
         return {
           select: vi.fn().mockReturnValue({
@@ -280,6 +291,7 @@ describe('a11y-phase4 — TeacherDashboard with McqBarChart visible', () => {
                 ],
                 error: null,
               }),
+              not: vi.fn().mockResolvedValue({ data: [], error: null }),
             }),
           }),
         } as never

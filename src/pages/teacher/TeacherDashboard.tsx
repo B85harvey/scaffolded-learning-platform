@@ -5,6 +5,9 @@
  * When a slide is selected the teacher can reveal a live McqBarChart that
  * updates in real time as student scribes submit their answers.
  *
+ * Also provides a "Download .csv" button that exports all scaffold responses
+ * for the lesson across every student who has submitted.
+ *
  * Protected by AdminRoute (via TeacherLayout).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -13,6 +16,9 @@ import { TeacherLayout } from '@/components/teacher/TeacherLayout'
 import { McqBarChart } from '@/components/teacher/McqBarChart'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { generateLessonCsv } from '@/utils/generateLessonCsv'
+import { triggerDocxDownload } from '@/utils/triggerDownload'
+import type { CsvColumn, CsvStudent } from '@/utils/generateLessonCsv'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -38,10 +44,20 @@ interface DbSlide {
   sort_order: number
   type: string
   config: {
+    // MCQ fields
     question?: string
     variant?: string
     options?: McqOption[]
+    // Scaffold fields (full SlideConfig stored as JSON)
+    section?: string
+    config?: { targetQuestion?: string; sectionHeading?: string }
   }
+}
+
+interface ScaffoldColumn {
+  slideId: string
+  /** Human-readable label: "Section: Target question" */
+  label: string
 }
 
 // ── Inner component (receives lessonId via router param) ──────────────────────
@@ -49,11 +65,14 @@ interface DbSlide {
 function TeacherDashboardInner() {
   const { lessonId } = useParams<{ lessonId: string }>()
 
+  const [lessonTitle, setLessonTitle] = useState<string>('')
   const [slides, setSlides] = useState<DashboardSlide[]>([])
+  const [scaffoldColumns, setScaffoldColumns] = useState<ScaffoldColumn[]>([])
   const [selectedSlide, setSelectedSlide] = useState<DashboardSlide | null>(null)
   const [submissions, setSubmissions] = useState<McqSubmission[]>([])
   const [isRevealed, setIsRevealed] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [csvDownloading, setCsvDownloading] = useState(false)
 
   const mountedRef = useRef(true)
   useEffect(() => {
@@ -71,15 +90,20 @@ function TeacherDashboardInner() {
     let cancelled = false
 
     async function loadSlides() {
-      const { data } = await supabase
-        .from('slides')
-        .select('id, sort_order, type, config')
-        .eq('lesson_id', lessonId!)
-        .order('sort_order')
+      const [slidesResult, lessonResult] = await Promise.all([
+        supabase
+          .from('slides')
+          .select('id, sort_order, type, config')
+          .eq('lesson_id', lessonId!)
+          .order('sort_order'),
+        supabase.from('lessons').select('title').eq('id', lessonId!).maybeSingle(),
+      ])
 
       if (cancelled) return
 
-      const mcqSlides: DashboardSlide[] = ((data ?? []) as DbSlide[])
+      const allSlides = (slidesResult.data ?? []) as DbSlide[]
+
+      const mcqSlides: DashboardSlide[] = allSlides
         .filter(
           (s) =>
             s.type === 'mcq' &&
@@ -99,8 +123,19 @@ function TeacherDashboardInner() {
           })),
         }))
 
+      const scaffoldCols: ScaffoldColumn[] = allSlides
+        .filter((s) => s.type === 'scaffold')
+        .map((s) => {
+          const section = s.config.section ?? ''
+          const targetQ = s.config.config?.targetQuestion ?? s.config.config?.sectionHeading ?? ''
+          const label = targetQ ? `${section}: ${targetQ}` : section
+          return { slideId: s.id, label }
+        })
+
       if (!cancelled) {
+        setLessonTitle(lessonResult.data?.title ?? '')
         setSlides(mcqSlides)
+        setScaffoldColumns(scaffoldCols)
         setSelectedSlide(mcqSlides[0] ?? null)
         setLoading(false)
       }
@@ -239,11 +274,94 @@ function TeacherDashboardInner() {
     setSelectedSlide(slide)
   }, [])
 
+  const handleDownloadCsv = useCallback(async () => {
+    if (!lessonId || csvDownloading) return
+    setCsvDownloading(true)
+
+    try {
+      // 1. Fetch all scaffold submissions for this lesson (section IS NOT NULL)
+      const { data: submissionsData } = await supabase
+        .from('lesson_submissions')
+        .select('student_id, slide_id, committed_paragraph')
+        .eq('lesson_id', lessonId)
+        .not('section', 'is', null)
+
+      const rows = (submissionsData ?? []) as Array<{
+        student_id: string
+        slide_id: string
+        committed_paragraph: string | null
+      }>
+
+      // 2. Collect unique student IDs
+      const studentIds = [...new Set(rows.map((r) => r.student_id).filter(Boolean))]
+
+      // 3. Fetch display names from profiles
+      const nameMap: Record<string, string> = {}
+      if (studentIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, display_name')
+          .in('id', studentIds)
+
+        for (const p of (profilesData ?? []) as Array<{
+          id: string
+          display_name: string | null
+        }>) {
+          nameMap[p.id] = p.display_name ?? p.id
+        }
+      }
+
+      // 4. Group responses by student
+      const responsesByStudent: Record<string, Record<string, string>> = {}
+      for (const row of rows) {
+        if (!responsesByStudent[row.student_id]) {
+          responsesByStudent[row.student_id] = {}
+        }
+        responsesByStudent[row.student_id][row.slide_id] = row.committed_paragraph ?? ''
+      }
+
+      // 5. Build students array — include all students who have any submission
+      const students: CsvStudent[] = studentIds.map((id) => ({
+        name: nameMap[id] ?? id,
+        responses: responsesByStudent[id] ?? {},
+      }))
+
+      // 6. Cast scaffold columns to the utility's type
+      const csvColumns: CsvColumn[] = scaffoldColumns.map((c) => ({
+        slideId: c.slideId,
+        label: c.label,
+      }))
+
+      // 7. Generate and download
+      const csv = generateLessonCsv({ lessonTitle, students, scaffoldColumns: csvColumns })
+      const blob = new Blob([csv], { type: 'text/csv' })
+      const safeTitle = lessonTitle.replace(/[/\\?%*:|"<>]/g, '-')
+      triggerDocxDownload(blob, `${safeTitle} - Class Responses.csv`)
+    } finally {
+      setCsvDownloading(false)
+    }
+  }, [lessonId, lessonTitle, scaffoldColumns, csvDownloading])
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div data-testid="teacher-dashboard" className="p-8">
-      <h1 className="mb-6 font-sans text-2xl font-semibold text-ga-ink">Class-check results</h1>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h1 className="font-sans text-2xl font-semibold text-ga-ink">Class-check results</h1>
+        <button
+          type="button"
+          data-testid="download-csv-btn"
+          onClick={() => void handleDownloadCsv()}
+          disabled={csvDownloading}
+          className={cn(
+            'rounded-ga-sm border border-ga-border-strong px-4 py-2 font-sans text-sm font-medium text-ga-ink',
+            'transition-colors hover:border-ga-primary hover:text-ga-primary disabled:opacity-50',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/40 focus-visible:ring-offset-2'
+          )}
+        >
+          {csvDownloading ? 'Downloading…' : 'Download .csv'}
+        </button>
+      </div>
 
       {loading ? (
         <div className="flex h-32 items-center justify-center">

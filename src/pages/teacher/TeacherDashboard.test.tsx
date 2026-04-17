@@ -5,12 +5,30 @@
  * - Slide selector renders class-check MCQ slides.
  * - McqBarChart appears with correct data after the teacher reveals answers.
  * - Realtime submission updates re-render the chart with updated counts.
+ * - "Download .csv" button calls generateLessonCsv and triggerDownload.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { TeacherDashboard } from '@/pages/teacher/TeacherDashboard'
+
+// ── Utility mocks ─────────────────────────────────────────────────────────────
+
+vi.mock('@/utils/generateLessonCsv', () => ({
+  generateLessonCsv: vi
+    .fn()
+    .mockReturnValue('"Student Name","Aim: Statement of intent"\n"Alex","The aim."'),
+}))
+
+vi.mock('@/utils/triggerDownload', () => ({
+  triggerDocxDownload: vi.fn(),
+}))
+
+const { generateLessonCsv } = await import('@/utils/generateLessonCsv')
+const { triggerDocxDownload } = await import('@/utils/triggerDownload')
+const mockGenerateLessonCsv = vi.mocked(generateLessonCsv)
+const mockTriggerDocxDownload = vi.mocked(triggerDocxDownload)
 
 // ── Auth mock ─────────────────────────────────────────────────────────────────
 
@@ -77,6 +95,17 @@ const MCQ_SLIDE = {
   },
 }
 
+const SCAFFOLD_SLIDE = {
+  id: 'scaffold-slide-1',
+  sort_order: 3,
+  type: 'scaffold',
+  config: {
+    section: 'aim',
+    mode: 'framed',
+    config: { targetQuestion: 'Statement of intent', mode: 'framed', id: 'cfg-1' },
+  },
+}
+
 const DB_SLIDES = [
   MCQ_SLIDE,
   // Non-class-check MCQ (self) — should NOT appear in selector
@@ -90,13 +119,30 @@ const DB_SLIDES = [
       options: [{ id: 'opt-x', text: 'Yes', correct: true }],
     },
   },
-  // Scaffold slide — should NOT appear in selector
+  // Scaffold slide — should NOT appear in MCQ selector
+  SCAFFOLD_SLIDE,
+]
+
+// Scaffold submissions for CSV download test
+const DB_SCAFFOLD_SUBMISSIONS = [
   {
-    id: 'scaffold-slide-1',
-    sort_order: 3,
-    type: 'scaffold',
-    config: { section: 'aim', mode: 'framed' },
+    student_id: 'student-1',
+    slide_id: 'scaffold-slide-1',
+    committed_paragraph: 'The aim is to investigate kitchen technologies.',
+    section: 'aim',
   },
+  {
+    student_id: 'student-2',
+    slide_id: 'scaffold-slide-1',
+    committed_paragraph: 'To explore modern cooking techniques.',
+    section: 'aim',
+  },
+]
+
+// Profiles for the students in DB_SCAFFOLD_SUBMISSIONS
+const DB_PROFILES = [
+  { id: 'student-1', display_name: 'Alex Smith' },
+  { id: 'student-2', display_name: 'Jordan Lee' },
 ]
 
 const DB_SUBMISSIONS = [
@@ -108,8 +154,15 @@ const DB_SUBMISSIONS = [
 
 // ── Mock builder ──────────────────────────────────────────────────────────────
 
+const mockScaffoldSubmissionsNotFn = vi.fn()
+const mockProfilesInFn = vi.fn()
+
 function setupFromMock(overrides: { submissions?: typeof DB_SUBMISSIONS } = {}) {
   const submissions = overrides.submissions ?? DB_SUBMISSIONS
+
+  // Reset CSV-path mocks to defaults
+  mockScaffoldSubmissionsNotFn.mockResolvedValue({ data: DB_SCAFFOLD_SUBMISSIONS, error: null })
+  mockProfilesInFn.mockResolvedValue({ data: DB_PROFILES, error: null })
 
   mockFrom.mockImplementation((table: string) => {
     if (table === 'slides') {
@@ -121,12 +174,33 @@ function setupFromMock(overrides: { submissions?: typeof DB_SUBMISSIONS } = {}) 
         }),
       } as never
     }
+    if (table === 'lessons') {
+      return {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: { title: 'Kitchen Technologies' }, error: null }),
+          }),
+        }),
+      } as never
+    }
     if (table === 'lesson_submissions') {
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
+            // MCQ submissions query: .eq(lessonId).eq(slideId)
             eq: vi.fn().mockResolvedValue({ data: submissions, error: null }),
+            // CSV scaffold query: .eq(lessonId).not(...)
+            not: mockScaffoldSubmissionsNotFn,
           }),
+        }),
+      } as never
+    }
+    if (table === 'profiles') {
+      return {
+        select: vi.fn().mockReturnValue({
+          in: mockProfilesInFn,
         }),
       } as never
     }
@@ -153,6 +227,11 @@ function renderDashboard(lessonId = LESSON_ID) {
 beforeEach(() => {
   vi.clearAllMocks()
   capturedRealtimeCallback = null
+
+  // Restore CSV utility mock defaults after clearAllMocks
+  mockGenerateLessonCsv.mockReturnValue(
+    '"Student Name","Aim: Statement of intent"\n"Alex","The aim."'
+  )
 
   channelMock.on.mockImplementation((_e: string, _f: unknown, cb: (p: unknown) => void) => {
     capturedRealtimeCallback = cb
@@ -203,6 +282,17 @@ describe('TeacherDashboard — page structure', () => {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
               order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          }),
+        } as never
+      }
+      if (table === 'lessons') {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi
+                .fn()
+                .mockResolvedValue({ data: { title: 'Kitchen Technologies' }, error: null }),
             }),
           }),
         } as never
@@ -376,5 +466,48 @@ describe('TeacherDashboard — realtime updates', () => {
     await waitFor(() => {
       expect(screen.getByTestId('mcq-label-0')).toHaveTextContent('1 (33%)')
     })
+  })
+})
+
+// ── Tests — CSV download ──────────────────────────────────────────────────────
+
+describe('TeacherDashboard — Download .csv', () => {
+  it('renders the "Download .csv" button', async () => {
+    renderDashboard()
+    await waitFor(() => expect(screen.getByTestId('download-csv-btn')).toBeInTheDocument())
+  })
+
+  it('clicking "Download .csv" calls generateLessonCsv with scaffold submissions', async () => {
+    const user = userEvent.setup()
+    renderDashboard()
+    await waitFor(() => screen.getByTestId('download-csv-btn'))
+
+    await user.click(screen.getByTestId('download-csv-btn'))
+
+    await waitFor(() => expect(mockGenerateLessonCsv).toHaveBeenCalledOnce())
+
+    const call = mockGenerateLessonCsv.mock.calls[0][0]
+    // lessonTitle should come from the lessons table query
+    expect(call.lessonTitle).toBe('Kitchen Technologies')
+    // students should reflect the two scaffold submissions
+    expect(call.students).toHaveLength(2)
+    // scaffoldColumns should include the scaffold slide with its label
+    expect(call.scaffoldColumns).toHaveLength(1)
+    expect(call.scaffoldColumns[0].slideId).toBe('scaffold-slide-1')
+    expect(call.scaffoldColumns[0].label).toContain('aim')
+  })
+
+  it('clicking "Download .csv" calls triggerDocxDownload with correct filename', async () => {
+    const user = userEvent.setup()
+    renderDashboard()
+    await waitFor(() => screen.getByTestId('download-csv-btn'))
+
+    await user.click(screen.getByTestId('download-csv-btn'))
+
+    await waitFor(() => expect(mockTriggerDocxDownload).toHaveBeenCalledOnce())
+
+    const [blob, filename] = mockTriggerDocxDownload.mock.calls[0]
+    expect((blob as Blob).type).toBe('text/csv')
+    expect(filename).toBe('Kitchen Technologies - Class Responses.csv')
   })
 })
