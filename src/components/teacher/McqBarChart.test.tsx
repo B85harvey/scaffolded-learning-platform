@@ -2,7 +2,7 @@
  * McqBarChart tests.
  *
  * Verifies relative bar heights, correct-option colouring, percentage labels,
- * empty-state rendering, and the accessible aria-label.
+ * empty-state rendering, the accessible aria-label, and theme contrast.
  */
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
@@ -115,5 +115,36 @@ describe('McqBarChart — accessibility', () => {
     setup({ options: ['A', 'B'], counts: [1, 9], correctIndex: 1, total: 10 })
     const chart = screen.getByRole('img')
     expect(chart).toHaveAttribute('aria-label', expect.stringContaining('A 1 vote 10%'))
+  })
+})
+
+describe('McqBarChart — dark theme', () => {
+  it('count/percentage labels use light text class on dark theme', () => {
+    setup({ theme: 'dark' })
+    expect(screen.getByTestId('mcq-label-0')).toHaveClass('text-white')
+    expect(screen.getByTestId('mcq-label-1')).toHaveClass('text-white')
+  })
+
+  it('option text labels use light text class on dark theme', () => {
+    setup({ theme: 'dark' })
+    expect(screen.getByTestId('mcq-option-text-0')).toHaveClass('text-white/70')
+  })
+
+  it('non-correct bars use higher-opacity primary on dark theme', () => {
+    setup({ theme: 'dark' })
+    // Correct bar (index 1) is bg-ga-green regardless
+    expect(screen.getByTestId('mcq-bar-1')).toHaveClass('bg-ga-green')
+    // Non-correct bars use bg-ga-primary/60 on dark
+    expect(screen.getByTestId('mcq-bar-0')).toHaveClass('bg-ga-primary/60')
+  })
+
+  it('count/percentage labels use dark ink class on light theme', () => {
+    setup({ theme: 'light' })
+    expect(screen.getByTestId('mcq-label-0')).toHaveClass('text-ga-ink')
+  })
+
+  it('renders empty state with light text class on dark theme', () => {
+    setup({ counts: [0, 0, 0], total: 0, theme: 'dark' })
+    expect(screen.getByTestId('mcq-chart-empty')).toHaveClass('text-white/60')
   })
 })

@@ -82,7 +82,15 @@ const DB_SLIDES = [
     id: 'slide-mcq',
     sort_order: 3,
     type: 'mcq',
-    config: { variant: 'class', question: 'What is the main function of a knife in cooking?' },
+    config: {
+      variant: 'class',
+      question: 'What is the main function of a knife in cooking?',
+      options: [
+        { id: 'opt-a', text: 'Cutting', correct: false },
+        { id: 'opt-b', text: 'Mixing', correct: false },
+        { id: 'opt-c', text: 'Chopping', correct: true },
+      ],
+    },
   },
 ]
 
@@ -102,6 +110,22 @@ const DB_SUBMISSIONS = [
     slide_id: 'slide-aim',
     section: 'aim',
     committed_paragraph: 'The aim is to cook pasta perfectly.',
+    prompt_answers: null,
+  },
+  // MCQ answers for the class-check slide
+  {
+    student_id: 'student-scribe-1',
+    slide_id: 'slide-mcq',
+    section: null,
+    committed_paragraph: null,
+    prompt_answers: { selectedOption: 'opt-a' },
+  },
+  {
+    student_id: 'student-scribe-2',
+    slide_id: 'slide-mcq',
+    section: null,
+    committed_paragraph: null,
+    prompt_answers: { selectedOption: 'opt-c' },
   },
 ]
 
@@ -370,5 +394,119 @@ describe('LiveWall — realtime updates', () => {
         'Updated paragraph after editing.'
       )
     })
+  })
+})
+
+describe('LiveWall — MCQ chart on MCQ slide', () => {
+  it('shows McqBarChart when an MCQ slide is selected', async () => {
+    const user = userEvent.setup()
+    renderWall()
+    await waitFor(() => screen.getByTestId('slide-selector'))
+
+    // Click the MCQ slide button to switch to it
+    await user.click(screen.getByTestId('slide-btn-slide-mcq'))
+
+    expect(screen.getByTestId('mcq-bar-chart')).toBeInTheDocument()
+  })
+
+  it('does not render response cards when MCQ slide is active', async () => {
+    const user = userEvent.setup()
+    renderWall()
+    await waitFor(() => screen.getByTestId('slide-selector'))
+
+    await user.click(screen.getByTestId('slide-btn-slide-mcq'))
+
+    expect(screen.queryByTestId('reveal-controls')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('card-grid')).not.toBeInTheDocument()
+  })
+
+  it('MCQ chart shows counts aggregated from submissions', async () => {
+    // DB_SUBMISSIONS has opt-a=1, opt-b=0, opt-c=1 for slide-mcq
+    const user = userEvent.setup()
+    renderWall()
+    await waitFor(() => screen.getByTestId('slide-selector'))
+
+    await user.click(screen.getByTestId('slide-btn-slide-mcq'))
+
+    await waitFor(() => screen.getByTestId('mcq-bar-chart'))
+    // opt-a: 1 of 2 total = 50%, opt-b: 0 (0%), opt-c: 1 of 2 = 50%
+    expect(screen.getByTestId('mcq-label-0')).toHaveTextContent('1 (50%)')
+    expect(screen.getByTestId('mcq-label-1')).toHaveTextContent('0 (0%)')
+    expect(screen.getByTestId('mcq-label-2')).toHaveTextContent('1 (50%)')
+  })
+
+  it('switching back to a scaffold slide restores response cards', async () => {
+    const user = userEvent.setup()
+    renderWall()
+    await waitFor(() => screen.getByTestId('slide-selector'))
+
+    // Go to MCQ slide
+    await user.click(screen.getByTestId('slide-btn-slide-mcq'))
+    expect(screen.getByTestId('mcq-bar-chart')).toBeInTheDocument()
+
+    // Switch back to scaffold slide
+    await user.click(screen.getByTestId('slide-btn-slide-aim'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('reveal-controls')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('mcq-bar-chart')).not.toBeInTheDocument()
+  })
+
+  it('MCQ chart updates when a new submission arrives via Realtime', async () => {
+    // Start with no MCQ submissions
+    setupFromMock({
+      submissions: [
+        {
+          student_id: 'student-scribe-1',
+          slide_id: 'slide-aim',
+          section: 'aim',
+          committed_paragraph: 'The aim is to cook pasta perfectly.',
+          prompt_answers: null,
+        },
+      ],
+    })
+
+    const user = userEvent.setup()
+    renderWall()
+    await waitFor(() => screen.getByTestId('slide-selector'))
+
+    await user.click(screen.getByTestId('slide-btn-slide-mcq'))
+    await waitFor(() => screen.getByTestId('mcq-chart-empty'))
+
+    // Fire a Realtime INSERT for an MCQ answer
+    act(() => {
+      capturedRealtimeCallback?.({
+        new: {
+          student_id: 'student-scribe-1',
+          lesson_id: LESSON_ID,
+          slide_id: 'slide-mcq',
+          section: null,
+          committed_paragraph: null,
+          prompt_answers: { selectedOption: 'opt-c' },
+        },
+      })
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('mcq-chart-empty')).not.toBeInTheDocument()
+      expect(screen.getByTestId('mcq-bar-chart')).toBeInTheDocument()
+    })
+    // opt-c gets 1 vote (100%)
+    expect(screen.getByTestId('mcq-label-2')).toHaveTextContent('1 (100%)')
+  })
+})
+
+describe('LiveWall — MCQ chart theme', () => {
+  it('MCQ chart labels use light text on dark theme (default)', async () => {
+    localStorage.removeItem('livewall-theme')
+    const user = userEvent.setup()
+    renderWall()
+    await waitFor(() => screen.getByTestId('slide-selector'))
+
+    await user.click(screen.getByTestId('slide-btn-slide-mcq'))
+    await waitFor(() => screen.getByTestId('mcq-bar-chart'))
+
+    expect(screen.getByTestId('mcq-label-0')).toHaveClass('text-white')
   })
 })

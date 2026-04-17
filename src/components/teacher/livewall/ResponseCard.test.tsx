@@ -1,7 +1,8 @@
 /**
  * ResponseCard tests.
  *
- * Verifies committed / waiting states, font sizes, and pin / hide controls.
+ * Verifies committed / waiting states, font sizes, pin / hide controls,
+ * and the card-reveal-enter animation class on revealed paragraphs.
  */
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
@@ -169,5 +170,37 @@ describe('ResponseCard — light theme', () => {
   it('renders in light theme without error', () => {
     setup({ theme: 'light' })
     expect(screen.getByTestId('response-card-group-1')).toBeInTheDocument()
+  })
+})
+
+describe('ResponseCard — reveal animation', () => {
+  it('revealed paragraph has card-reveal-enter class when reduced motion is off', () => {
+    // Default test-setup stubs matchMedia to return matches:false (reduced motion off).
+    setup({ isRevealed: true })
+    expect(screen.getByTestId('card-paragraph-group-1')).toHaveClass('card-reveal-enter')
+  })
+
+  it('revealed paragraph does not have card-reveal-enter class when reduced motion is on', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+    )
+    setup({ isRevealed: true })
+    expect(screen.getByTestId('card-paragraph-group-1')).not.toHaveClass('card-reveal-enter')
+  })
+
+  it('non-revealed card does not have card-reveal-enter class', () => {
+    setup({ isRevealed: false })
+    // No revealed paragraph element — card-paragraph testid should not exist
+    expect(screen.queryByTestId('card-paragraph-group-1')).not.toBeInTheDocument()
   })
 })

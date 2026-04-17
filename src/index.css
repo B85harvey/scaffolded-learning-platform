@@ -147,6 +147,25 @@
   animation: slide-enter var(--ga-duration-base) var(--ga-ease-standard) both;
 }
 
+/* ── Card reveal animation ─────────────────────────────────────────────────── */
+/* Applied to the paragraph content when a Live Wall response card is revealed. */
+/* The global @media rule above zeros duration for prefers-reduced-motion;      */
+/* the JS useReducedMotion hook additionally suppresses the class entirely.     */
+@keyframes card-reveal {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.card-reveal-enter {
+  animation: card-reveal 300ms ease-out both;
+}
+
 /* ── Toast enter animation ─────────────────────────────────────────────────── */
 @keyframes toast-enter {
   from {

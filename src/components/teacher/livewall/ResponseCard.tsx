@@ -14,6 +14,7 @@
  */
 import { Pin, PinOff, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ export function ResponseCard({
   const isDark = theme === 'dark'
   const hasResponse = paragraph !== null && paragraph.trim() !== ''
   const isClickable = !isRevealed && hasResponse
+  const reducedMotion = useReducedMotion()
 
   // Hidden cards only render when showHidden is true.
   if (isHidden && !showHidden) return null
@@ -101,7 +103,11 @@ export function ResponseCard({
       <div className="mt-3">
         {isRevealed && hasResponse ? (
           <p
-            className={cn('font-sans leading-relaxed', isDark ? 'text-white/90' : 'text-ga-ink')}
+            className={cn(
+              'font-sans leading-relaxed',
+              isDark ? 'text-white/90' : 'text-ga-ink',
+              !reducedMotion && 'card-reveal-enter'
+            )}
             style={{ fontSize: '20px' }}
             data-testid={`card-paragraph-${groupId}`}
           >

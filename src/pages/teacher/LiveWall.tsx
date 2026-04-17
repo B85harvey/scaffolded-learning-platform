@@ -7,7 +7,8 @@
  *
  * Features:
  * - Slide selector (scaffold + class-check MCQ slides)
- * - Response cards — one per group, revealed on demand
+ * - Scaffold slides: response cards — one per group, revealed on demand
+ * - MCQ slides: live bar chart showing vote distribution
  * - Dark / light theme toggle (default dark, persisted to localStorage)
  * - Escape key exits full-screen
  * - Live updates via Supabase Realtime
@@ -20,6 +21,7 @@ import { SlideSelector } from '@/components/teacher/livewall/SlideSelector'
 import type { WallSlide } from '@/components/teacher/livewall/SlideSelector'
 import { RevealControls } from '@/components/teacher/livewall/RevealControls'
 import type { GroupCard } from '@/components/teacher/livewall/RevealControls'
+import { McqBarChart } from '@/components/teacher/McqBarChart'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
@@ -62,6 +64,8 @@ interface Submission {
   slideId: string
   section: string | null
   paragraph: string | null
+  /** MCQ answer — present only for MCQ-type submissions. */
+  promptAnswers: { selectedOption?: string } | null
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -83,13 +87,22 @@ function dbSlidesToWallSlides(slides: DbSlide[]): WallSlide[] {
         section,
       })
     } else if (slide.type === 'mcq') {
-      const cfg = slide.config as { variant?: string; question?: string }
+      const cfg = slide.config as {
+        variant?: string
+        question?: string
+        options?: Array<{ id: string; text: string; correct?: boolean }>
+      }
       if (cfg.variant === 'class') {
         const q = typeof cfg.question === 'string' ? cfg.question : ''
         wallSlides.push({
           slideId: slide.id,
           type: 'mcq',
           label: q.length > 30 ? q.slice(0, 30) + '…' : q || 'Class check',
+          options: (cfg.options ?? []).map((o) => ({
+            id: o.id,
+            text: o.text,
+            correct: o.correct,
+          })),
         })
       }
     }
@@ -199,10 +212,10 @@ function LiveWallInner() {
         }
       }
 
-      // 4. Existing submissions
+      // 4. Existing submissions (scaffold paragraphs + MCQ answers)
       const { data: subsData } = await supabase
         .from('lesson_submissions')
-        .select('student_id, slide_id, section, committed_paragraph')
+        .select('student_id, slide_id, section, committed_paragraph, prompt_answers')
         .eq('lesson_id', lessonId!)
 
       if (!cancelled) {
@@ -212,6 +225,7 @@ function LiveWallInner() {
             slide_id: string
             section: string | null
             committed_paragraph: string | null
+            prompt_answers: unknown
           }>
         )
           .filter((r) => r.student_id !== null)
@@ -220,6 +234,7 @@ function LiveWallInner() {
             slideId: r.slide_id,
             section: r.section,
             paragraph: r.committed_paragraph,
+            promptAnswers: r.prompt_answers as Submission['promptAnswers'],
           }))
         setSubmissions(parsed)
         setLoading(false)
@@ -254,6 +269,7 @@ function LiveWallInner() {
             slide_id: string
             section: string | null
             committed_paragraph: string | null
+            prompt_answers: unknown
           }
         }) => {
           const row = payload.new
@@ -265,7 +281,11 @@ function LiveWallInner() {
             )
             if (idx >= 0) {
               const next = [...prev]
-              next[idx] = { ...next[idx], paragraph: row.committed_paragraph }
+              next[idx] = {
+                ...next[idx],
+                paragraph: row.committed_paragraph,
+                promptAnswers: row.prompt_answers as Submission['promptAnswers'],
+              }
               return next
             }
             return [
@@ -275,6 +295,7 @@ function LiveWallInner() {
                 slideId: row.slide_id,
                 section: row.section,
                 paragraph: row.committed_paragraph,
+                promptAnswers: row.prompt_answers as Submission['promptAnswers'],
               },
             ]
           })
@@ -288,20 +309,14 @@ function LiveWallInner() {
     }
   }, [lessonId])
 
-  // ── Derived cards ───────────────────────────────────────────────────────────
+  // ── Derived: scaffold response cards ─────────────────────────────────────────
 
   const cards = useMemo<GroupCard[]>(() => {
-    if (!selectedSlide) return []
+    if (!selectedSlide || selectedSlide.type !== 'scaffold') return []
     return groups.map((g) => {
       const scribeId = scribeMap.get(g.id)
       const sub = scribeId
-        ? submissions.find(
-            (s) =>
-              s.studentId === scribeId &&
-              (selectedSlide.type === 'scaffold'
-                ? s.section === selectedSlide.section
-                : s.slideId === selectedSlide.slideId)
-          )
+        ? submissions.find((s) => s.studentId === scribeId && s.section === selectedSlide.section)
         : undefined
       return {
         groupId: g.id,
@@ -310,6 +325,29 @@ function LiveWallInner() {
       }
     })
   }, [groups, scribeMap, submissions, selectedSlide])
+
+  // ── Derived: MCQ chart data ───────────────────────────────────────────────────
+
+  const mcqOptionTexts = useMemo(
+    () => selectedSlide?.options?.map((o) => o.text) ?? [],
+    [selectedSlide]
+  )
+
+  const mcqCounts = useMemo(() => {
+    if (!selectedSlide || selectedSlide.type !== 'mcq' || !selectedSlide.options) return []
+    const slideSubmissions = submissions.filter((s) => s.slideId === selectedSlide.slideId)
+    return selectedSlide.options.map(
+      (opt) => slideSubmissions.filter((s) => s.promptAnswers?.selectedOption === opt.id).length
+    )
+  }, [selectedSlide, submissions])
+
+  const mcqTotal = useMemo(() => mcqCounts.reduce((sum, c) => sum + c, 0), [mcqCounts])
+
+  const mcqCorrectIndex = useMemo(() => {
+    if (!selectedSlide?.options) return 0
+    const idx = selectedSlide.options.findIndex((o) => o.correct)
+    return idx >= 0 ? idx : 0
+  }, [selectedSlide])
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -345,7 +383,17 @@ function LiveWallInner() {
             />
           </div>
         ) : selectedSlide ? (
-          <RevealControls key={selectedSlide.slideId} cards={cards} theme={theme} />
+          selectedSlide.type === 'mcq' ? (
+            <McqBarChart
+              options={mcqOptionTexts}
+              counts={mcqCounts}
+              correctIndex={mcqCorrectIndex}
+              total={mcqTotal}
+              theme={theme}
+            />
+          ) : (
+            <RevealControls key={selectedSlide.slideId} cards={cards} theme={theme} />
+          )
         ) : (
           <p
             className={cn(

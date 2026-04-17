@@ -10,8 +10,10 @@
  *   counts       — response count for each option (parallel to options)
  *   correctIndex — index of the correct option
  *   total        — total number of responses (sum of counts)
+ *   theme        — 'dark' | 'light' — controls text and bar colours
  *
  * Shows an empty state when total === 0.
+ * Legible on both dark (Live Wall) and light (Dashboard) backgrounds.
  */
 import { cn } from '@/lib/utils'
 
@@ -22,15 +24,21 @@ interface Props {
   counts: number[]
   correctIndex: number
   total: number
+  theme?: 'dark' | 'light'
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function McqBarChart({ options, counts, correctIndex, total }: Props) {
+export function McqBarChart({ options, counts, correctIndex, total, theme = 'light' }: Props) {
+  const isDark = theme === 'dark'
+
   // Empty state
   if (total === 0) {
     return (
-      <p data-testid="mcq-chart-empty" className="font-sans text-sm italic text-ga-ink-muted">
+      <p
+        data-testid="mcq-chart-empty"
+        className={cn('font-sans text-sm italic', isDark ? 'text-white/60' : 'text-ga-ink-muted')}
+      >
         No responses yet.
       </p>
     )
@@ -59,7 +67,7 @@ export function McqBarChart({ options, counts, correctIndex, total }: Props) {
       {options.map((option, i) => {
         const count = counts[i] ?? 0
         const pct = Math.round((count / total) * 100)
-        // Height relative to the tallest bar so all bars are visible
+        // Height relative to the tallest bar so all bars are always visible
         const heightPct = Math.round((count / maxCount) * 100)
         const isCorrect = i === correctIndex
 
@@ -72,7 +80,7 @@ export function McqBarChart({ options, counts, correctIndex, total }: Props) {
             {/* Count + percentage label above bar */}
             <span
               data-testid={`mcq-label-${i}`}
-              className="font-sans text-xs font-medium text-ga-ink"
+              className={cn('font-sans text-xs font-medium', isDark ? 'text-white' : 'text-ga-ink')}
             >
               {count} ({pct}%)
             </span>
@@ -83,7 +91,13 @@ export function McqBarChart({ options, counts, correctIndex, total }: Props) {
                 data-testid={`mcq-bar-${i}`}
                 className={cn(
                   'w-full rounded-t-ga-sm transition-all duration-300',
-                  isCorrect ? 'bg-ga-green' : 'bg-ga-primary/40'
+                  isCorrect
+                    ? 'bg-ga-green'
+                    : // Dark theme: higher opacity (primary-100 equivalent) for legibility
+                      // Light theme: softer tint (primary-200 equivalent)
+                      isDark
+                      ? 'bg-ga-primary/60'
+                      : 'bg-ga-primary/40'
                 )}
                 style={{ height: `${heightPct}%` }}
               />
@@ -92,7 +106,10 @@ export function McqBarChart({ options, counts, correctIndex, total }: Props) {
             {/* Option text label below bar */}
             <span
               data-testid={`mcq-option-text-${i}`}
-              className="text-center font-sans text-xs text-ga-ink-muted"
+              className={cn(
+                'text-center font-sans text-xs',
+                isDark ? 'text-white/70' : 'text-ga-ink-muted'
+              )}
             >
               {option}
             </span>

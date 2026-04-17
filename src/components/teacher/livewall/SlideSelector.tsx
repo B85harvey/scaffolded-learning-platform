@@ -9,6 +9,12 @@ import { cn } from '@/lib/utils'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+export interface McqSlideOption {
+  id: string
+  text: string
+  correct?: boolean
+}
+
 export interface WallSlide {
   slideId: string
   type: 'scaffold' | 'mcq'
@@ -16,6 +22,8 @@ export interface WallSlide {
   label: string
   /** Scaffold section key used to filter lesson_submissions. */
   section?: string
+  /** MCQ option data — populated only when type === 'mcq'. */
+  options?: McqSlideOption[]
 }
 
 interface Props {
