@@ -71,7 +71,7 @@ export function TeacherLessonsPage() {
       const { data: lessonsData } = await supabase
         .from('lessons')
         .select('id, title, updated_at')
-        .eq('created_by', userId)
+        .eq('created_by', userId!)
         .order('updated_at', { ascending: false })
 
       if (cancelled) return
@@ -170,7 +170,8 @@ export function TeacherLessonsPage() {
     const slides = (slidesData ?? []) as Array<{
       sort_order: number
       type: string
-      config: unknown
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      config: any
     }>
     if (slides.length > 0) {
       await supabase.from('slides').insert(
