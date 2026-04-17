@@ -45,7 +45,7 @@ const SECTION_LABELS: Record<string, string> = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function renderSlide(slide: SlideConfig) {
+function renderSlide(slide: SlideConfig, lessonTitle: string, studentName: string) {
   switch (slide.type) {
     case 'content':
       return <SlideContent title={slide.title} body={slide.body} image={slide.image} />
@@ -54,7 +54,7 @@ function renderSlide(slide: SlideConfig) {
     case 'scaffold':
       return <SlideScaffold slide={slide} />
     case 'review':
-      return <SlideReview />
+      return <SlideReview lessonTitle={lessonTitle} studentName={studentName} />
   }
 }
 
@@ -139,9 +139,11 @@ const COMMITTED_SECTIONS = [
 function LessonShellInner({
   lesson,
   studentId,
+  studentName,
 }: {
   lesson: LessonConfig
   studentId: string | null
+  studentName: string
 }) {
   const { state, dispatch } = useLesson()
   const scribeLabel = useScribeLabel(lesson.id, studentId)
@@ -339,7 +341,7 @@ function LessonShellInner({
           <main id="main" className="flex flex-1 flex-col overflow-y-auto p-8 md:p-6 lg:p-8">
             <div className="mx-auto w-full max-w-[820px]">
               <SlideFrame key={currentSlide.id} slide={currentSlide} isLocked={isLocked}>
-                {renderSlide(currentSlide)}
+                {renderSlide(currentSlide, lesson.title, studentName)}
               </SlideFrame>
             </div>
           </main>
@@ -414,8 +416,14 @@ interface LessonShellProps {
    * Phase 3: will come from auth context once wired.
    */
   studentId?: string | null
+  /** Display name used in the .docx export subtitle. Defaults to "Student". */
+  studentName?: string
 }
 
-export function LessonShell({ lesson, studentId = null }: LessonShellProps) {
-  return <LessonShellInner lesson={lesson} studentId={studentId} />
+export function LessonShell({
+  lesson,
+  studentId = null,
+  studentName = 'Student',
+}: LessonShellProps) {
+  return <LessonShellInner lesson={lesson} studentId={studentId} studentName={studentName} />
 }

@@ -9,8 +9,9 @@ import type { LessonConfig } from '@/lessons/types'
 
 export function LessonPage() {
   const { id } = useParams<{ id: string }>()
-  const { session } = useAuth()
+  const { session, profile } = useAuth()
   const studentId = session?.user.id ?? null
+  const studentName = profile?.display_name ?? 'Student'
 
   // Initialise from URL param so the effect never calls setState synchronously.
   // When id is missing we show the error state immediately without an effect.
@@ -70,7 +71,7 @@ export function LessonPage() {
 
   return (
     <LessonProvider initialState={makeLessonState(lesson.id, lesson.slides)}>
-      <LessonShell lesson={lesson} studentId={studentId} />
+      <LessonShell lesson={lesson} studentId={studentId} studentName={studentName} />
     </LessonProvider>
   )
 }

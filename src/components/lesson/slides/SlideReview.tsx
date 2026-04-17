@@ -2,7 +2,9 @@ import { useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useLesson } from '@/contexts/LessonContext'
 import { toast } from '@/components/ui/Toast'
-import { buildMarkdown, ActionPlanDocument } from '@/components/lesson/ActionPlanDocument'
+import { buildMarkdown, ActionPlanDocument, SECTIONS } from '@/components/lesson/ActionPlanDocument'
+import { generateLessonDocx } from '@/utils/generateLessonDocx'
+import { triggerDocxDownload } from '@/utils/triggerDownload'
 import type { CommittedParagraph } from '@/lessons/types'
 
 // ── Word count helper ─────────────────────────────────────────────────────────
@@ -77,7 +79,13 @@ function TabList({ activeTab, onSelect }: TabListProps) {
 
 // ── Download menu ─────────────────────────────────────────────────────────────
 
-function DownloadMenu() {
+interface DownloadMenuProps {
+  lessonTitle: string
+  studentName: string
+  committed: Record<string, string | undefined>
+}
+
+function DownloadMenu({ lessonTitle, studentName, committed }: DownloadMenuProps) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -116,8 +124,29 @@ function DownloadMenu() {
     }
   }
 
-  const handleItemClick = () => {
-    toast('Coming in Phase 5', { variant: 'info' })
+  const handleDocxClick = async () => {
+    setOpen(false)
+    triggerRef.current?.focus()
+
+    const sections = SECTIONS.map(({ key, label }) => ({
+      heading: label,
+      content: committed[key] ?? null,
+    }))
+
+    const date = new Date().toLocaleDateString('en-AU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+
+    const blob = await generateLessonDocx({ lessonTitle, studentName, date, sections })
+    const safeTitle = lessonTitle.replace(/[/\\?%*:|"<>]/g, '-')
+    const safeName = studentName.replace(/[/\\?%*:|"<>]/g, '-')
+    triggerDocxDownload(blob, `${safeTitle} - ${safeName}.docx`)
+  }
+
+  const handlePdfClick = () => {
+    toast('Coming soon', { variant: 'info' })
     setOpen(false)
     triggerRef.current?.focus()
   }
@@ -161,7 +190,7 @@ function DownloadMenu() {
                 }}
                 role="menuitem"
                 type="button"
-                onClick={handleItemClick}
+                onClick={item.id === 'docx' ? () => void handleDocxClick() : handlePdfClick}
                 onKeyDown={(e) => handleMenuKeyDown(e, idx)}
                 className={cn(
                   'w-full px-4 py-2 text-left font-sans text-sm text-ga-ink',
@@ -181,7 +210,12 @@ function DownloadMenu() {
 
 // ── SlideReview ───────────────────────────────────────────────────────────────
 
-export function SlideReview() {
+interface SlideReviewProps {
+  lessonTitle: string
+  studentName: string
+}
+
+export function SlideReview({ lessonTitle, studentName }: SlideReviewProps) {
   const { state, dispatch } = useLesson()
   const activeTab = state.ui.reviewTab
 
@@ -235,7 +269,11 @@ export function SlideReview() {
           >
             Copy All
           </button>
-          <DownloadMenu />
+          <DownloadMenu
+            lessonTitle={lessonTitle}
+            studentName={studentName}
+            committed={committedText}
+          />
         </div>
       </div>
 

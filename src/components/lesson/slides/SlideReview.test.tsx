@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LessonProvider } from '@/contexts/LessonContext'
 import { makeLessonState } from '@/contexts/lessonReducer'
@@ -8,9 +8,27 @@ import type { CommittedParagraph } from '@/lessons/types'
 import { SlideReview } from './SlideReview'
 import { ToastRegion } from '@/components/ui/Toast'
 
+// ── Utility mocks ─────────────────────────────────────────────────────────────
+
+vi.mock('@/utils/generateLessonDocx', () => ({
+  generateLessonDocx: vi.fn().mockResolvedValue(new Blob(['fake-docx'])),
+}))
+
+vi.mock('@/utils/triggerDownload', () => ({
+  triggerDocxDownload: vi.fn(),
+}))
+
+const { generateLessonDocx } = await import('@/utils/generateLessonDocx')
+const { triggerDocxDownload } = await import('@/utils/triggerDownload')
+const mockGenerateLessonDocx = vi.mocked(generateLessonDocx)
+const mockTriggerDocxDownload = vi.mocked(triggerDocxDownload)
+
 // ── matchMedia stub ───────────────────────────────────────────────────────────
 
 beforeEach(() => {
+  vi.clearAllMocks()
+  // Reset mocks to their default resolved values after clearAllMocks
+  mockGenerateLessonDocx.mockResolvedValue(new Blob(['fake-docx']))
   vi.stubGlobal(
     'matchMedia',
     vi.fn(() => ({
@@ -54,7 +72,7 @@ function renderReview(stateOverrides: Partial<LessonState> = {}) {
   return render(
     <LessonProvider initialState={state}>
       <ToastRegion />
-      <SlideReview />
+      <SlideReview lessonTitle="Kitchen Technologies" studentName="Alex Smith" />
     </LessonProvider>
   )
 }
@@ -208,12 +226,47 @@ describe('SlideReview — Download menu', () => {
     expect(screen.getByRole('menuitem', { name: 'Download as .pdf' })).toBeInTheDocument()
   })
 
-  it('clicking a menu item fires an info toast "Coming in Phase 5"', async () => {
+  it('clicking .docx calls generateLessonDocx with correct section data from the reducer', async () => {
+    const user = userEvent.setup()
+    renderReview({
+      committed: {
+        aim: aimParagraph,
+        issues: issuesParagraph,
+      },
+    })
+    await user.click(screen.getByRole('button', { name: 'Download' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Download as .docx' }))
+
+    await waitFor(() => expect(mockGenerateLessonDocx).toHaveBeenCalledOnce())
+
+    const call = mockGenerateLessonDocx.mock.calls[0][0]
+    expect(call.lessonTitle).toBe('Kitchen Technologies')
+    expect(call.studentName).toBe('Alex Smith')
+    // Aim section has content; issues has content; the rest are null.
+    const aimSection = call.sections.find((s) => s.heading === 'Aim')
+    const decisionSection = call.sections.find((s) => s.heading === 'Decision')
+    expect(aimSection?.content).toBe(aimParagraph.text)
+    expect(decisionSection?.content).toBeNull()
+  })
+
+  it('clicking .docx calls triggerDocxDownload with the correct filename', async () => {
     const user = userEvent.setup()
     renderReview()
     await user.click(screen.getByRole('button', { name: 'Download' }))
     await user.click(screen.getByRole('menuitem', { name: 'Download as .docx' }))
-    expect(await screen.findByText('Coming in Phase 5')).toBeInTheDocument()
+
+    await waitFor(() => expect(mockTriggerDocxDownload).toHaveBeenCalledOnce())
+
+    const [, filename] = mockTriggerDocxDownload.mock.calls[0]
+    expect(filename).toBe('Kitchen Technologies - Alex Smith.docx')
+  })
+
+  it('clicking .pdf shows a "Coming soon" toast', async () => {
+    const user = userEvent.setup()
+    renderReview()
+    await user.click(screen.getByRole('button', { name: 'Download' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Download as .pdf' }))
+    expect(await screen.findByText('Coming soon')).toBeInTheDocument()
   })
 })
 
