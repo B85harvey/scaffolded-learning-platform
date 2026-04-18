@@ -14,10 +14,12 @@ import { LessonEditor } from '@/pages/teacher/LessonEditor'
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: vi.fn(),
+  useOptionalAuth: vi.fn(),
 }))
 
-const { useAuth } = await import('@/contexts/AuthContext')
+const { useAuth, useOptionalAuth } = await import('@/contexts/AuthContext')
 const mockUseAuth = vi.mocked(useAuth)
+const mockUseOptionalAuth = vi.mocked(useOptionalAuth)
 
 const TEACHER = {
   session: { user: { id: 'teacher-1' } } as never,
@@ -162,6 +164,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
   vi.clearAllMocks()
   mockUseAuth.mockReturnValue(TEACHER)
+  mockUseOptionalAuth.mockReturnValue(TEACHER)
   setupFromMock()
 })
 

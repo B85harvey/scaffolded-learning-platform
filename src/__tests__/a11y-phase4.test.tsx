@@ -28,7 +28,7 @@ import { TeacherLessonsPage } from '@/pages/teacher/TeacherLessonsPage'
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
-vi.mock('@/contexts/AuthContext', () => ({ useAuth: vi.fn() }))
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: vi.fn(), useOptionalAuth: vi.fn() }))
 
 const { channelMock } = vi.hoisted(() => {
   const mock = { on: vi.fn(), subscribe: vi.fn() }
@@ -51,8 +51,9 @@ vi.mock('@/lib/supabase', () => ({
 
 // ── Shared constants ──────────────────────────────────────────────────────────
 
-const { useAuth } = await import('@/contexts/AuthContext')
+const { useAuth, useOptionalAuth } = await import('@/contexts/AuthContext')
 const mockUseAuth = vi.mocked(useAuth)
+const mockUseOptionalAuth = vi.mocked(useOptionalAuth)
 const { supabase } = await import('@/lib/supabase')
 const mockFrom = vi.mocked(supabase.from)
 
@@ -100,6 +101,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true })
   vi.clearAllMocks()
   mockUseAuth.mockReturnValue(TEACHER)
+  mockUseOptionalAuth.mockReturnValue(TEACHER)
   channelMock.on.mockReturnValue(channelMock)
   channelMock.subscribe.mockReturnValue(channelMock)
 })

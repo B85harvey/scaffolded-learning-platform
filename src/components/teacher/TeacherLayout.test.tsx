@@ -11,10 +11,12 @@ import { TeacherLayout } from './TeacherLayout'
 
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: vi.fn(),
+  useOptionalAuth: vi.fn(),
 }))
 
-const { useAuth } = await import('@/contexts/AuthContext')
+const { useAuth, useOptionalAuth } = await import('@/contexts/AuthContext')
 const mockUseAuth = vi.mocked(useAuth)
+const mockUseOptionalAuth = vi.mocked(useOptionalAuth)
 
 const TEACHER_AUTH = {
   session: { user: { id: 'teacher-1' } } as never,
@@ -52,6 +54,7 @@ function renderLayout(initialPath = '/teacher/lessons') {
 describe('TeacherLayout — teacher user', () => {
   it('renders TeacherNav with expected links', () => {
     mockUseAuth.mockReturnValue(TEACHER_AUTH)
+    mockUseOptionalAuth.mockReturnValue(TEACHER_AUTH)
     renderLayout()
 
     expect(screen.getByRole('navigation', { name: 'Teacher navigation' })).toBeInTheDocument()
@@ -67,6 +70,7 @@ describe('TeacherLayout — teacher user', () => {
 
   it('renders children inside main', () => {
     mockUseAuth.mockReturnValue(TEACHER_AUTH)
+    mockUseOptionalAuth.mockReturnValue(TEACHER_AUTH)
     renderLayout()
     expect(screen.getByRole('main')).toBeInTheDocument()
     expect(screen.getByText('Lessons content')).toBeInTheDocument()

@@ -17,6 +17,7 @@ import { LessonPage } from './LessonPage'
 vi.mock('@/lib/lessonLoader')
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: vi.fn(),
+  useOptionalAuth: vi.fn(),
 }))
 
 // LessonShell internals that require IndexedDB or network
@@ -70,8 +71,9 @@ beforeEach(() => {
 const { loadLesson } = await import('@/lib/lessonLoader')
 const mockLoadLesson = vi.mocked(loadLesson)
 
-const { useAuth } = await import('@/contexts/AuthContext')
+const { useAuth, useOptionalAuth } = await import('@/contexts/AuthContext')
 const mockUseAuth = vi.mocked(useAuth)
+const mockUseOptionalAuth = vi.mocked(useOptionalAuth)
 
 const { hydrateLesson, hydrateLessonFromDexie } = await import('@/lib/hydrateLesson')
 const mockHydrateLesson = vi.mocked(hydrateLesson)
@@ -96,12 +98,14 @@ const MOCK_LESSON = {
 }
 
 function renderPage(lessonId = 'kitchen-technologies') {
-  mockUseAuth.mockReturnValue({
+  const auth = {
     session: { user: { id: 'student-1' } } as never,
     profile: null,
     loading: false,
     signOut: vi.fn(),
-  })
+  }
+  mockUseAuth.mockReturnValue(auth)
+  mockUseOptionalAuth.mockReturnValue(auth)
 
   return render(
     <MemoryRouter initialEntries={[`/lesson/${lessonId}`]}>

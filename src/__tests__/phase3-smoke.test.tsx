@@ -23,7 +23,7 @@ import { LessonPage } from '@/pages/lesson/LessonPage'
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
-vi.mock('@/contexts/AuthContext', () => ({ useAuth: vi.fn() }))
+vi.mock('@/contexts/AuthContext', () => ({ useAuth: vi.fn(), useOptionalAuth: vi.fn() }))
 vi.mock('@/components/AppNav', () => ({ AppNav: () => <nav aria-label="Main navigation" /> }))
 vi.mock('@/components/SkipToContent', () => ({ SkipToContent: () => null }))
 vi.mock('@/lib/completionCalc', () => ({
@@ -106,8 +106,9 @@ vi.mock('@/lib/syncService', () => ({
 
 // ── Auth setup ────────────────────────────────────────────────────────────────
 
-const { useAuth } = await import('@/contexts/AuthContext')
+const { useAuth, useOptionalAuth } = await import('@/contexts/AuthContext')
 const mockUseAuth = vi.mocked(useAuth)
+const mockUseOptionalAuth = vi.mocked(useOptionalAuth)
 const { hydrateLesson, hydrateLessonFromDexie } = await import('@/lib/hydrateLesson')
 const { syncDirtyDrafts, updateProgress } = await import('@/lib/syncService')
 const { useLockSubscription } = await import('@/hooks/useLockSubscription')
@@ -127,6 +128,7 @@ beforeEach(() => {
 
   // Re-establish implementations cleared by resetAllMocks
   mockUseAuth.mockReturnValue(STUDENT)
+  mockUseOptionalAuth.mockReturnValue(STUDENT)
   vi.mocked(hydrateLesson).mockResolvedValue(EMPTY_HYDRATED as never)
   vi.mocked(hydrateLessonFromDexie).mockResolvedValue(EMPTY_HYDRATED as never)
   vi.mocked(syncDirtyDrafts).mockResolvedValue(undefined)
