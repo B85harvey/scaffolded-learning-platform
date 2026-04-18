@@ -1,17 +1,21 @@
 import { Link } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
+import { HomeLink } from '@/components/ui/HomeLink'
 import { useAuth } from '@/contexts/AuthContext'
+import { useViewAs } from '@/contexts/ViewAsContext'
 
 /**
  * Minimal top navigation bar.
  * - Teachers see admin links (Class, Units, Groups).
  * - Students see their name and a Home link.
+ * A teacher in student-view sees the student nav so the preview feels real.
  * Both views include a Sign out button.
  */
 export function AppNav() {
   const { profile, session, signOut } = useAuth()
+  const { effectiveRole } = useViewAs()
 
-  const isTeacher = profile?.role === 'teacher'
+  const isTeacher = effectiveRole === 'teacher'
   const displayName = profile?.display_name ?? session?.user.email ?? ''
 
   function handleSignOut() {
@@ -25,6 +29,7 @@ export function AppNav() {
     >
       {isTeacher ? (
         <div className="flex flex-1 items-center gap-6">
+          <HomeLink />
           <Link
             to="/admin/class"
             className="rounded-sm text-sm font-medium text-ga-text hover:text-ga-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
@@ -46,6 +51,7 @@ export function AppNav() {
         </div>
       ) : (
         <div className="flex flex-1 items-center gap-6">
+          <HomeLink />
           <span className="text-sm font-medium text-ga-text">{displayName}</span>
           <Link
             to="/home"
