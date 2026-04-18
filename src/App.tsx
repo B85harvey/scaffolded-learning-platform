@@ -104,6 +104,7 @@ function App() {
               </AdminRoute>
             }
           />
+          <Route path="/admin/groups" element={<Navigate to="/teacher/lessons" replace />} />
 
           {/* Teacher */}
           <Route
@@ -118,32 +119,11 @@ function App() {
           <Route path="/teacher/lessons/:lessonId/edit" element={<LessonEditor />} />
           <Route path="/teacher/livewall/:lessonId" element={<LiveWall />} />
           <Route path="/teacher/dashboard/:lessonId" element={<TeacherDashboard />} />
-          <Route
-            path="/teacher/dashboard"
-            element={
-              <TeacherLayout>
-                <div className="p-8">
-                  <h1 className="font-sans text-2xl font-semibold text-ga-ink">Dashboard</h1>
-                  <p className="mt-2 font-sans text-sm text-ga-ink-muted">
-                    Teacher dashboard coming in Phase 5.
-                  </p>
-                </div>
-              </TeacherLayout>
-            }
-          />
-          <Route
-            path="/teacher/live-wall"
-            element={
-              <TeacherLayout>
-                <div className="p-8">
-                  <h1 className="font-sans text-2xl font-semibold text-ga-ink">Live Wall</h1>
-                  <p className="mt-2 font-sans text-sm text-ga-ink-muted">
-                    Live wall coming in Phase 5.
-                  </p>
-                </div>
-              </TeacherLayout>
-            }
-          />
+          {/* Legacy links without a lessonId land back on the library so
+              teachers can pick which lesson's dashboard or live wall to open. */}
+          <Route path="/teacher/dashboard" element={<Navigate to="/teacher/lessons" replace />} />
+          <Route path="/teacher/live-wall" element={<Navigate to="/teacher/lessons" replace />} />
+          <Route path="/teacher/livewall" element={<Navigate to="/teacher/lessons" replace />} />
 
           {/* Dev tools */}
           <Route

@@ -8,6 +8,7 @@
  */
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { BarChart3, Presentation } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -293,6 +294,30 @@ export function TeacherLessonsPage() {
                 </td>
                 <td className="py-3">
                   <div className="flex items-center gap-2">
+                    <Link
+                      to={`/teacher/dashboard/${lesson.id}`}
+                      aria-label={`Open dashboard for ${lesson.title}`}
+                      data-testid={`dashboard-btn-${lesson.id}`}
+                      className={cn(
+                        'flex h-8 w-8 items-center justify-center rounded text-ga-ink-muted',
+                        'hover:bg-ga-surface-muted hover:text-ga-ink',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/70'
+                      )}
+                    >
+                      <BarChart3 size={16} aria-hidden="true" />
+                    </Link>
+                    <Link
+                      to={`/teacher/livewall/${lesson.id}`}
+                      aria-label={`Open live wall for ${lesson.title}`}
+                      data-testid={`livewall-btn-${lesson.id}`}
+                      className={cn(
+                        'flex h-8 w-8 items-center justify-center rounded text-ga-ink-muted',
+                        'hover:bg-ga-surface-muted hover:text-ga-ink',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/70'
+                      )}
+                    >
+                      <Presentation size={16} aria-hidden="true" />
+                    </Link>
                     <Link
                       to={`/teacher/lessons/${lesson.id}/edit`}
                       data-testid={`edit-btn-${lesson.id}`}

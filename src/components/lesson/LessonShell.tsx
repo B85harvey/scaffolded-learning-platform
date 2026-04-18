@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Home } from 'lucide-react'
 import { useLesson } from '@/contexts/LessonContext'
 import type { LessonState } from '@/contexts/lessonReducer'
 import { ActionPlanPanel } from './ActionPlanPanel'
@@ -313,8 +313,20 @@ function LessonShellInner({
         {/* ── Header ────────────────────────────────────────────────────────── */}
         {/* Two-row header, total ~88 px. Horizontal padding matches the main slide area. */}
         <header className="sticky top-0 z-10 border-b border-ga-border-subtle bg-ga-surface">
-          {/* Row 1: lesson title (left) + save status (right) */}
-          <div data-testid="header-row-1" className="flex h-11 items-center px-6 lg:px-8">
+          {/* Row 1: home link + lesson title (left) + save status (right) */}
+          <div data-testid="header-row-1" className="flex h-11 items-center gap-3 px-6 lg:px-8">
+            {/* Plain anchor rather than react-router Link so LessonShell can
+                still be rendered in isolation inside component tests that do
+                not wrap it in a Router. A full page navigation on exit also
+                releases lesson state cleanly. */}
+            <a
+              href="/home"
+              aria-label="Exit lesson and return home"
+              data-testid="lesson-exit-link"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-ga-sm text-ga-ink-muted transition-colors hover:bg-ga-surface-muted hover:text-ga-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-primary/70"
+            >
+              <Home size={18} aria-hidden="true" />
+            </a>
             <p className="min-w-0 flex-1 truncate font-sans text-lg font-semibold leading-snug text-ga-ink">
               {lesson.title}
             </p>

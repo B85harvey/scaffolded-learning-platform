@@ -1,9 +1,9 @@
 /**
  * TeacherNav — unified navigation bar for all teacher-facing pages.
  *
- * Combines the Phase 4 teacher routes (Lessons, Dashboard, Live Wall) with
- * the existing Phase 3 admin routes (Class, Units, Groups) so teachers have
- * one consistent nav across the whole app.
+ * Shows the lesson library and class-management routes. Dashboard and Live
+ * Wall are per-lesson views and are reached from the lesson library row
+ * actions, not from the global nav.
  */
 import { Link } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
@@ -18,32 +18,12 @@ export function TeacherNav() {
       className="flex h-12 items-center border-b border-ga-border bg-ga-card px-6"
     >
       <div className="flex flex-1 items-center gap-6">
-        {/* Phase 4 teacher routes */}
         <Link
           to="/teacher/lessons"
           className="rounded-sm text-sm font-medium text-ga-text hover:text-ga-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
         >
           My Lessons
         </Link>
-        <Link
-          to="/teacher/dashboard"
-          className="rounded-sm text-sm font-medium text-ga-text hover:text-ga-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
-        >
-          Dashboard
-        </Link>
-        <Link
-          to="/teacher/live-wall"
-          className="rounded-sm text-sm font-medium text-ga-text hover:text-ga-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"
-        >
-          Live Wall
-        </Link>
-
-        {/* Divider */}
-        <span className="text-ga-border" aria-hidden="true">
-          |
-        </span>
-
-        {/* Phase 3 admin routes */}
         <Link
           to="/admin/class"
           className="rounded-sm text-sm font-medium text-ga-text hover:text-ga-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ga-blue/50 focus-visible:ring-offset-2"

@@ -56,11 +56,13 @@ describe('TeacherLayout — teacher user', () => {
 
     expect(screen.getByRole('navigation', { name: 'Teacher navigation' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'My Lessons' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Live Wall' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Class' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Units' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Groups' })).toBeInTheDocument()
+    // Dashboard and Live Wall are per-lesson views reached from the lesson
+    // library row actions, not the global nav.
+    expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Live Wall' })).not.toBeInTheDocument()
   })
 
   it('renders children inside main', () => {
